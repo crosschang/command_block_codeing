@@ -19,6 +19,9 @@
     "testFiles": [
         "test.ts"
     ],
+    "fileDependencies": {
+        "src/project/file_export.ts": "file"
+    },
     "targetVersions": {
         "target": "2.1.27",
         "targetId": "minecraft"
@@ -26,8 +29,5 @@
     "supportedTargets": [
         "minecraft"
     ],
-    "preferredEditor": "blocksprj",
-    "fileDependencies": {
-        "src/project/file_export.ts": "file"
-    }
+    "preferredEditor": "blocksprj"
 }
