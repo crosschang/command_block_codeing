@@ -1,6 +1,6 @@
 {
     "name": "command_block_codeing",
-    "version": "0.0.1",
+    "version": "0.3.0",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -11,6 +11,7 @@
         "src/ast/command.ts",
         "src/blocks/say_adapter.ts",
         "src/compiler/compiler.ts",
+        "src/project/file_export.ts",
         "custom.ts",
         "main.ts",
         "README.md"
@@ -25,5 +26,8 @@
     "supportedTargets": [
         "minecraft"
     ],
-    "preferredEditor": "blocksprj"
+    "preferredEditor": "blocksprj",
+    "fileDependencies": {
+        "src/project/file_export.ts": "file"
+    }
 }
