@@ -1,19 +1,43 @@
 /**
  * command_block_codeing
  *
- * M0 SAY bidirectional round-trip POC.
+ * M0 SAY bidirectional round-trip POC v2.
  *
- * Current verified architecture target:
+ * Core:
  * MakeCode Block -> Block Adapter -> AST -> Compiler -> .mcfunction text
- * .mcfunction text -> Parser -> AST -> Block Adapter -> block-compatible value
+ * .mcfunction text -> Parser -> AST -> MakeCode TypeScript source
  *
- * Actual host Blockly workspace insertion and physical file import/export are
- * intentionally the next capability test, not faked in this layer.
+ * v2 capability test:
+ * generated MakeCode TypeScript uses the public MCFunction.sayCommand(...)
+ * API so the native MakeCode JavaScript -> Blocks decompiler can recreate
+ * the custom SAY block after the source is placed in the editor.
+ *
+ * Direct host Blockly workspace mutation is NOT implemented here.
  */
 
 //% color=#4C97FF weight=100 icon="\uf1b2"
-//% groups=['SAY 왕복 POC', '테스트']
+//% groups=['SAY 명령', 'SAY 왕복 POC', '테스트']
 namespace MCFunction {
+    /**
+     * Real statement block used as the decompiler target for imported SAY.
+     *
+     * JavaScript:
+     *   MCFunction.sayCommand("Hello World");
+     *
+     * should decompile back to this MakeCode block.
+     */
+    //% blockId=mcfunction_say_command
+    //% block="SAY %message"
+    //% message.shadow="text"
+    //% message.defl="Hello World"
+    //% group="SAY 명령"
+    //% weight=100
+    export function sayCommand(message: string): void {
+        const ast = MCFunctionBlockAdapter.sayFromBlock(message);
+        const command = MCFunctionCompiler.compileCommand(ast);
+        player.execute(command);
+    }
+
     /**
      * Compile one MakeCode SAY block input into one .mcfunction command line.
      */
@@ -28,7 +52,6 @@ namespace MCFunction {
 
     /**
      * Parse .mcfunction text and return the first structured SAY message.
-     * Empty string means that no supported SAY command was found.
      */
     //% block="mcfunction에서 첫 SAY 메시지 읽기 %source"
     //% source.shadow="text"
@@ -39,9 +62,20 @@ namespace MCFunction {
     }
 
     /**
+     * Convert supported SAY lines from .mcfunction text into MakeCode
+     * TypeScript source. Paste the generated source into JavaScript and
+     * switch back to Blocks to test the native decompiler path.
+     */
+    //% block="mcfunction → MakeCode JavaScript %source"
+    //% source.shadow="text"
+    //% source.defl="say Hello World"
+    //% group="SAY 왕복 POC"
+    export function mcfunctionToMakeCodeJavaScript(source: string): string {
+        return MCFunctionMakeCodeSource.mcfunctionToMakeCode(source);
+    }
+
+    /**
      * Parse and compile a complete .mcfunction text again.
-     * SAY becomes structured AST; comments, blanks and unsupported commands
-     * are preserved by the M0 Raw fallback.
      */
     //% block="mcfunction SAY 왕복 %source"
     //% source.shadow="text"
@@ -52,9 +86,7 @@ namespace MCFunction {
         return MCFunctionCompiler.compileFunction(file);
     }
 
-    /**
-     * Count SAY commands parsed as structured AST nodes.
-     */
+    /** Count SAY commands parsed as structured AST nodes. */
     //% block="mcfunction의 SAY 개수 %source"
     //% source.shadow="text"
     //% source.defl="say one\nsay two"
@@ -64,15 +96,21 @@ namespace MCFunction {
     }
 
     /**
-     * Compile SAY through AST/Compiler and execute the generated command.
-     * This is only an M0 smoke-test helper.
+     * Show generated MakeCode source in Minecraft chat, one generated line at
+     * a time. This helper is only for the M0 capability test.
      */
-    //% block="컴파일한 SAY 실행 %message"
-    //% message.shadow="text"
-    //% message.defl="Hello World"
+    //% block="변환된 MakeCode 코드 채팅으로 보기 %source"
+    //% source.shadow="text"
+    //% source.defl="say Hello World"
     //% group="테스트"
-    export function testRunCompiledSay(message: string): void {
-        const command = sayToMcfunction(message);
-        player.execute(command);
+    export function showGeneratedMakeCode(source: string): void {
+        const generated = mcfunctionToMakeCodeJavaScript(source);
+        const lines = generated.split("\n");
+
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].length > 0) {
+                player.say(lines[i]);
+            }
+        }
     }
 }

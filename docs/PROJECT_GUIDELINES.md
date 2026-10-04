@@ -1,6 +1,6 @@
 # command_block_codeing — Project Guidelines
 
-업데이트: 2026-10-04 — SAY Round-trip Restart
+업데이트: 2026-10-04 — SAY MakeCode Decompiler POC v2
 저장소: `crosschang/command_block_codeing`
 
 ---
@@ -80,12 +80,14 @@ say Hello World
 → 최종적으로 MakeCode SAY 블록 생성
 ```
 
-현재 첫 구현에서는 Parser/Compiler/Core 경로부터 검증한다.
+현재 Core Parser/Compiler 경로는 구성되어 있으며, 다음으로 `AST → MakeCode TypeScript → MakeCode native JavaScript→Blocks decompiler` 경로를 검증한다.
 
 다음 두 기능은 **실제 MakeCode capability를 확인한 뒤** 연결한다.
 
 1. 실제 `.mcfunction` 파일 업로드/다운로드
 2. Parser 결과를 현재 host Blockly Workspace의 블록으로 자동 삽입
+
+M0 v2에서는 직접 Workspace 조작보다 먼저, 생성된 `MCFunction.sayCommand(...)` TypeScript를 MakeCode 자체 decompiler가 실제 SAY 블록으로 복원하는지 검증한다.
 
 일반 GitHub Extension에서 위 기능이 가능하다고 미리 가정하지 않는다.
 
@@ -108,9 +110,10 @@ M0 Core 이후 별도 Capability PASS:
 
 9. `.mcfunction` 실제 파일 Import
 10. `.mcfunction` 실제 파일 Export
-11. Parser AST → 현재 MakeCode Workspace의 SAY 블록 생성
+11. Parser AST → MakeCode TypeScript 생성 → JavaScript→Blocks 전환 시 SAY 블록 복원
+12. 이후 실제 Import 과정에서 현재 프로젝트 소스로 자동 반영 가능한 공식 경로 검증
 
-9~11이 검증되기 전에는 Visual IDE 전체 구현을 확대하지 않는다.
+9~12가 검증되기 전에는 Visual IDE 전체 구현을 확대하지 않는다.
 
 ---
 
@@ -167,8 +170,10 @@ command_block_codeing/
 │  │  └─ say_adapter.ts
 │  ├─ parser/
 │  │  └─ parser.ts
-│  └─ compiler/
-│     └─ compiler.ts
+│  ├─ compiler/
+│  │  └─ compiler.ts
+│  └─ generator/
+│     └─ makecode_source.ts
 │
 └─ docs/
    ├─ PROJECT_GUIDELINES.md

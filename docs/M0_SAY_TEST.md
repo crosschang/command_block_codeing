@@ -1,22 +1,33 @@
-# M0 SAY Round-trip 테스트
+# M0 SAY 양방향 POC v2 테스트
 
-## A. Blocks → AST → Compiler
+## 목표
 
-`SAY → mcfunction` 블록의 message를 `Hello World`로 설정한다.
-
-예상 결과:
+이번 버전의 핵심은 `.mcfunction`의 `say`를 파싱한 뒤 **MakeCode가 다시 Blocks로 디컴파일할 수 있는 TypeScript 호출**을 생성하는 것이다.
 
 ```text
 say Hello World
+→ Parser
+→ Say AST
+→ MakeCode Source Generator
+→ MCFunction.sayCommand("Hello World");
+→ MakeCode JavaScript Editor
+→ Blocks 전환
+→ [SAY Hello World] 블록
 ```
 
-## B. Parser → AST
+> 이번 버전은 현재 Blockly Workspace를 직접 수정하지 않는다. 먼저 MakeCode 자체 JavaScript → Blocks 디컴파일 경로가 실제 Minecraft Education Code Builder에서 동작하는지를 검증한다.
 
-`mcfunction에서 첫 SAY 메시지 읽기`에 다음 텍스트를 넣는다.
+## 테스트 A — Extension 로드
 
-```text
-say Hello World
-```
+`command_block_codeing` Extension을 추가하고 `MCFunction` 카테고리에 다음 블록이 보이는지 확인한다.
+
+- `SAY Hello World`
+- `SAY Hello World → mcfunction`
+- `mcfunction → MakeCode JavaScript say Hello World`
+
+## 테스트 B — SAY 블록 실행
+
+`SAY Hello World` 블록을 `시작하면`에 넣고 Minecraft로 돌아간다.
 
 예상 결과:
 
@@ -24,50 +35,51 @@ say Hello World
 Hello World
 ```
 
-## C. Round-trip
+## 테스트 C — JavaScript → Blocks 핵심 테스트
 
-`mcfunction SAY 왕복`에 다음을 넣는다.
+MakeCode에서 **JavaScript** 탭으로 전환한다.
 
-```mcfunction
-# M0 test
-say Hello World
+다음 한 줄을 입력한다.
 
-say Second line
+```ts
+MCFunction.sayCommand("Hello World");
 ```
 
-예상 결과:
+그 다음 **Blocks**로 전환한다.
 
-```mcfunction
-# M0 test
-say Hello World
+### PASS 기준
 
-say Second line
-```
-
-`mcfunction의 SAY 개수` 예상 결과는 `2`이다.
-
-## D. Minecraft Education 실제 실행
-
-`컴파일한 SAY 실행 "Hello World"` 블록을 실행한다.
-
-내부 경로:
+다음 블록이 실제 Workspace에 나타난다.
 
 ```text
-Block input
-→ Say AST
-→ Compiler
-→ "say Hello World"
-→ player.execute(...)
+[SAY Hello World]
 ```
 
-Minecraft 채팅에 SAY 결과가 출력되면 runtime smoke test PASS.
+이 테스트가 PASS하면 `.mcfunction → AST → MakeCode TypeScript → Blocks` 경로를 채택한다.
 
-## 아직 PASS로 간주하지 않는 기능
+## 테스트 D — 변환기 출력 확인
 
-다음은 M0 Core가 성공한 뒤 별도 capability POC로 진행한다.
+`mcfunction → MakeCode JavaScript` 블록에 다음을 넣는다.
 
-1. 실제 `.mcfunction` 파일 선택/읽기
-2. 실제 `.mcfunction` 파일 다운로드/저장
-3. Parser 결과로 현재 host Blockly Workspace에 SAY 블록 자동 생성
+```mcfunction
+say Hello World
+say Second Line
+```
 
-이 세 기능을 일반 GitHub Extension에서 실제로 가능한지 확인하기 전에는 구현 가능하다고 가정하지 않는다.
+예상 생성 소스:
+
+```ts
+MCFunction.sayCommand("Hello World");
+MCFunction.sayCommand("Second Line");
+```
+
+`변환된 MakeCode 코드 채팅으로 보기` 블록을 이용하면 M0 테스트용으로 각 생성 줄을 Minecraft 채팅에서 확인할 수 있다.
+
+## 다음 단계
+
+C 테스트가 PASS한 뒤에만 다음을 진행한다.
+
+1. 실제 `.mcfunction` 파일 Import UI 조사
+2. 생성 TypeScript를 현재 프로젝트 소스로 넣을 수 있는 Editor 경로 조사
+3. 자동 삽입이 불가능하면 MakeCode가 공식적으로 허용하는 Import 진입점을 설계
+4. SAY 실제 자동 블록 생성 완성
