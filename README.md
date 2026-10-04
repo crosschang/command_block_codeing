@@ -1,23 +1,40 @@
-> 이 페이지를 [https://crosschang.github.io/command_block_codeing/](https://crosschang.github.io/command_block_codeing/)으로 열기
+# command_block_codeing
 
-## 확장으로 사용
+Minecraft Education의 Code Builder / MakeCode에서 사용할 Command 블록 프로젝트입니다.
 
-이 저장소는 MakeCode에서 **확장**으로 추가될 수 있습니다.
+현재 단계는 **M0-1**이며, 아직 AST / Parser / Compiler / Registry를 구현하지 않습니다.
+먼저 MakeCode 블록 자체가 안정적으로 동작하는지 확인합니다.
 
-* [https://minecraft.makecode.com/](https://minecraft.makecode.com/) 열기
-* **새로운 프로젝트**에서 클릭
-* 톱니바퀴 모양 메뉴에서 **확장**을 클릭합니다
-* **https://github.com/crosschang/command_block_codeing**으로 검색하고 가져오기
+## 현재 블록
 
-## 이 프로젝트 편집
+```text
+Command
+└─ SAY [Hello World]
+```
 
-MakeCode에서 이 저장소를 편집합니다.
+## 테스트 순서
 
-* [https://minecraft.makecode.com/](https://minecraft.makecode.com/) 열기
-* **가져오기**를 클릭한 다음 **가져오기 URL**를 클릭합니다
-* **https://github.com/crosschang/command_block_codeing**를 붙여넣고 가져오기를 클릭하세요.
+1. Minecraft Education에서 Code Builder를 엽니다.
+2. MakeCode 프로젝트에서 이 GitHub Extension을 추가합니다.
+3. Toolbox에 `Command` 카테고리가 표시되는지 확인합니다.
+4. `SAY Hello World` 블록을 배치합니다.
+5. JavaScript로 전환했을 때 아래 형태인지 확인합니다.
 
-#### 메타데이터(검색, 렌더링에 사용)
+```ts
+Command.say("Hello World")
+```
 
-* for PXT/minecraft
-<script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+6. 다시 Blocks로 돌아왔을 때 SAY 블록이 유지되는지 확인합니다.
+7. Minecraft로 돌아가 `Hello World`가 채팅에 출력되는지 확인합니다.
+
+## 이번 단계에서 하지 않는 것
+
+- `.mcfunction` 출력
+- `.mcfunction` 읽기
+- Parser
+- Compiler
+- AST
+- Registry
+- Workspace 자동 생성
+
+위 4개 핵심 테스트가 PASS한 뒤 다음 단계로 진행합니다.

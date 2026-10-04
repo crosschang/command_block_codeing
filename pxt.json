@@ -1,13 +1,15 @@
 {
     "name": "command_block_codeing",
-    "description": "Minecraft Education / Bedrock mcfunction bidirectional block editor POC",
+    "version": "0.1.0",
+    "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
         "builder": "*"
     },
     "files": [
-        "main.ts",
         "main.blocks",
+        "custom.ts",
+        "main.ts",
         "README.md"
     ],
     "testFiles": [
@@ -20,5 +22,5 @@
     "supportedTargets": [
         "minecraft"
     ],
-    "preferredEditor": "tsprj"
+    "preferredEditor": "blocksprj"
 }
