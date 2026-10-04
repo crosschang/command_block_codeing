@@ -1,6 +1,6 @@
 {
     "name": "command_block_codeing",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -8,6 +8,9 @@
     },
     "files": [
         "main.blocks",
+        "src/ast/command.ts",
+        "src/blocks/say_adapter.ts",
+        "src/compiler/compiler.ts",
         "custom.ts",
         "main.ts",
         "README.md"
