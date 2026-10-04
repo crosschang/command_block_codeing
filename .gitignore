@@ -1,3 +1,4 @@
+# MakeCode
 built
 node_modules
 yotta_modules
@@ -9,3 +10,6 @@ _site
 *.tgz
 .header.json
 .simstate.json
+docs/PROJECT_GUIDELINES.md
+docs/M0_SAY_TEST.md
+docs/M0_SAY_TEST.md
