@@ -63,3 +63,10 @@ For preview, `Command.mcFunction("sub/test")` first resolves the matching
 `FunctionFile.define()` callback and runs it directly. If no matching MakeCode
 definition exists, it falls back to the real Minecraft `function sub/test`
 command so external Behavior Pack functions can still be tested.
+
+## Legacy Selector core restored (v0.3.0)
+
+The proven legacy Selector system is restored without the old generated Registry libraries.
+It includes `@a`, `@e`, `@p`, `@r`, `@s`, and Dialogue `@initiator`, plus the existing legacy selector-condition chain (type/tag/name/gamemode/area/range/scores/family/hasitem).
+
+The current Converter design is recorded in `docs/PROJECT_PLAN.md` but implementation is deferred while command blocks are expanded.
