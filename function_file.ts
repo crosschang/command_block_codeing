@@ -17,7 +17,7 @@ namespace FunctionFile {
     //% block="mcfunction file %name"
     //% name.shadow="text"
     //% name.defl="main"
-    //% handlerStatement=1
+    //% blockAllowMultiple=1
     export function define(name: string, handler: () => void): void {
         player.onChat(name, handler);
     }
