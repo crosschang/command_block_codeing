@@ -54,9 +54,10 @@ namespace Command {
         executeCommand(command);
     }
 
+
     /** Give an item using Selector + direct/custom Item ID. */
     //% blockId=command_give
-    //% block="GIVE target %target item %item amount %amount"
+    //% block="GIVE target $target item $item amount $amount"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
     //% item.shadow="mcfunction_item_id_text_shadow"
@@ -78,7 +79,7 @@ namespace Command {
 
     /** Give an item with data and Bedrock command components. */
     //% blockId=command_give_advanced
-    //% block="GIVE ADVANCED target %target item %item amount %amount data %data components %components"
+    //% block="GIVE ADVANCED target $target item $item amount $amount data $data components $components"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
     //% item.shadow="mcfunction_item_id_text_shadow"
@@ -102,5 +103,4 @@ namespace Command {
         );
         executeCommand(command);
     }
-
 }

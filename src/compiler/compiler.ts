@@ -24,6 +24,7 @@ namespace MCFunctionCompiler {
         return "function " + command.functionId;
     }
 
+
     function compileGive(command: MCFunctionAST.GiveCommand): string {
         let result =
             "give " +

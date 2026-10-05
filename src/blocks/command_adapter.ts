@@ -8,6 +8,7 @@ namespace MCFunctionBlocks {
         return MCFunctionAST.createMcFunctionCommand(functionId);
     }
 
+
     export function createGiveCommand(
         target: MCFunctionAST.Selector,
         itemId: string,
@@ -30,10 +31,7 @@ namespace MCFunctionBlocks {
         return MCFunctionAST.createGiveCommand(
             target,
             MCFunctionAST.createItemStackWithComponents(
-                itemId,
-                amount,
-                data,
-                components
+                itemId, amount, data, components
             )
         );
     }

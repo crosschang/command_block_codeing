@@ -71,22 +71,9 @@ It includes `@a`, `@e`, `@p`, `@r`, `@s`, and Dialogue `@initiator`, plus the ex
 
 The current Converter design is recorded in `docs/PROJECT_PLAN.md` but implementation is deferred while command blocks are expanded.
 
-## Restored GIVE + Item Components (v0.4.0)
+## GIVE + Item Components clean restore (v0.4.2)
 
-This build restores the legacy-tested GIVE command path without generated Registry libraries.
-
-- `Command.give(target, item, amount)`
-- `Command.giveAdvanced(target, item, amount, data, components)`
-- direct/custom item IDs
-- `can_destroy`
-- `can_place_on`
-- `lock_in_inventory`
-- `lock_in_slot`
-- `keep_on_death`
-
-Runtime preview and future Converter export both use the same AST -> Compiler output.
-
-
-## v0.4.1 fix
-
-Renamed the TypeScript namespace `Item` to `MCItem` to avoid a duplicate identifier collision with Minecraft MakeCode core `Item`. Block IDs and the ITEM toolbox category are unchanged.
+This version was rebuilt from the last Selector-PASS baseline.
+It intentionally reuses the existing `mcfunction_item_id_text_shadow` and does
+not redeclare it. Item component UI lives in the unique
+`MCFunctionItemComponents` namespace, while the Toolbox label remains `ITEM`.

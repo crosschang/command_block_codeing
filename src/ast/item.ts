@@ -1,18 +1,32 @@
-/** Minecraft item stack AST used by give and later item commands. */
+/**
+ * Minecraft Item AST
+ *
+ * give, clear, replaceitem 등에서 공통으로 사용한다.
+ */
+
 namespace MCFunctionAST {
+
     export interface ItemStack {
         id: string;
         amount: number;
         data: number;
+
         components: ItemCommandComponents;
     }
 
-    export function createItemStack(id: string, amount: number, data: number): ItemStack {
+    export function createItemStack(
+        id: string,
+        amount: number,
+        data: number
+    ): ItemStack {
+
         return {
             id: id,
             amount: amount,
             data: data,
-            components: createItemCommandComponents()
+
+            components:
+                createItemCommandComponents()
         };
     }
 
@@ -22,6 +36,7 @@ namespace MCFunctionAST {
         data: number,
         components: ItemCommandComponents
     ): ItemStack {
+
         return {
             id: id,
             amount: amount,

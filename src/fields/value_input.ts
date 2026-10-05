@@ -47,6 +47,7 @@ namespace MCFunctionFields {
     }
 }
 
+
 namespace MCFunctionFields {
     /** Minimal direct Block ID wrapper; no Registry dependency. */
     export class BlockValue {
