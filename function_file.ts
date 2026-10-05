@@ -27,6 +27,10 @@ namespace FunctionFile {
     //% blockAllowMultiple=1
     export function define(name: string, handler: () => void): void {
         register(name, handler);
+
+        // Keep the convenient direct chat preview used for simple function IDs.
+        // Nested IDs such as sub/test are invoked reliably through Command.mcFunction().
+        player.onChat(name, handler);
     }
 
     /**
