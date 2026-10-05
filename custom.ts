@@ -8,6 +8,10 @@
 //% groups='["TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
+        if (!FunctionFile.allowCommandExecution()) {
+            return;
+        }
+
         let issues = MCFunctionValidator.validateCommand(command);
 
         if (MCFunctionValidator.hasError(issues)) {
@@ -51,6 +55,10 @@ namespace Command {
     //% functionId.shadow="text"
     //% functionId.defl="sub/test"
     export function mcFunction(functionId: string): void {
+        if (!FunctionFile.allowCommandExecution()) {
+            return;
+        }
+
         let command = MCFunctionBlocks.createMcFunctionCommand(functionId);
 
         // Converter/export meaning still comes from the AST + Compiler:

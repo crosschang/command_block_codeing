@@ -25,7 +25,8 @@ FunctionFile.tickJson(function () {
 ```
 
 The `tick.json` block and `mcfunction file` blocks are independent top-level containers in the `FunctionFile` Toolbox category.
-A `tickValue()` block is intended to be nested inside `tickJson()`.
+A `tickValue()` block is the **only canonical statement** allowed inside `tickJson()`.
+`FunctionFile.define()` and `tickJson()` are top-level project containers; they are not nested inside one another.
 
 ## Future Converter output
 
@@ -83,12 +84,17 @@ The MakeCode loop is only an editor/runtime approximation. The exported Minecraf
 ## Structural rules
 
 - One Behavior Pack has one `functions/tick.json` file.
-- `tickJson()` is a project-level container, not a child of `mcfunction file`.
-- `tickValue()` belongs inside `tickJson()`.
+- `tickJson()` is a top-level project container, not a child of `mcfunction file`.
+- `FunctionFile.define()` is also a top-level project container and cannot be nested inside another file container.
+- `tickValue()` belongs only inside `tickJson()`.
+- The canonical `tickJson()` body accepts only `FunctionFile.tickValue()` entries.
+- This project's `Command.*`, nested `FunctionFile.define()`, and nested `tickJson()` are rejected by Runtime Preview guards when used inside `tickJson()`.
+- `Command.mcFunction()` recursion is not a structural error; function invocation is distinct from function-file definition.
 - `tick.json` is not `Preview.*` metadata and must not be discarded by the Converter.
 - `Preview.ready()` remains Preview-only and is still ignored by export.
 - Empty/invalid function paths should be validated by the future project/converter validator rather than command validation.
 - The Converter should report multiple `tickJson()` declarations as a project-structure error instead of silently producing multiple files.
+- Standard PXT callback mouths do not provide a custom statement-connection type through ordinary extension annotations, so the future Converter must strictly reject any non-`tickValue()` statement found inside the canonical `tickJson()` callback.
 
 ## Toolbox target shape
 

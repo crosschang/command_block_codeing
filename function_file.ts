@@ -1,18 +1,29 @@
 /**
  * Represents .mcfunction files and function metadata in Blocks/JavaScript.
  *
- * Converter meaning:
+ * Canonical project meaning:
  *   FunctionFile.define("main", ...) -> functions/main.mcfunction
  *   FunctionFile.tickJson(...)       -> functions/tick.json
+ *   FunctionFile.tickValue("main")   -> one tick.json values[] entry
+ *
+ * Structural policy:
+ *   - define() and tickJson() are top-level project containers.
+ *   - define() cannot be nested inside define() or tickJson().
+ *   - tickJson() cannot be nested inside define() or tickJson().
+ *   - tickValue() belongs only inside tickJson().
+ *   - Minecraft command blocks are rejected while tickJson() is collecting values.
  *
  * Minecraft Education runtime preview:
- *   - FunctionFile.define() registers preview handlers for MakeCode-defined files
- *   - Command.mcFunction("id") resolves those handlers first
+ *   - FunctionFile.define() registers preview handlers for MakeCode-defined files.
+ *   - Command.mcFunction("id") resolves those handlers first.
  *   - FunctionFile.tickJson() approximates tick.json by running every registered
- *     tickValue() entry in declaration order about every 50 ms
+ *     tickValue() entry in declaration order about every 50 ms.
  *
- * The runtime registries below are PREVIEW ONLY. The canonical project declarations
- * are define()/tickJson()/tickValue(), which the future Converter maps to files.
+ * NOTE: Standard PXT callback statement inputs do not expose a custom Blockly
+ * connection type through normal GitHub Extension annotations. The canonical
+ * API and runtime guards below therefore enforce the project structure, while
+ * the future Converter/Project Validator must reject non-tickValue statements
+ * found inside tickJson() when parsing JavaScript.
  */
 //% color=#9966FF weight=95 icon="\uf15b"
 //% groups='["FUNCTION FILE", "TICK.JSON"]'
@@ -26,6 +37,10 @@ namespace FunctionFile {
     let tickPreviewStarted = false;
     let collectingTickValues = false;
 
+    // Preview-only structural context. This does not change exported command meaning.
+    let functionExecutionDepth = 0;
+    let reportedStructureErrorCodes: string[] = [];
+
     /**
      * Define one mcfunction file.
      * The callback body becomes the command list for that file in Converter Edition.
@@ -36,12 +51,32 @@ namespace FunctionFile {
     //% name.shadow="text"
     //% name.defl="main"
     //% blockAllowMultiple=1
+    //% topblock=true
     export function define(name: string, handler: () => void): void {
+        if (collectingTickValues) {
+            reportStructureError(
+                "FUNCTION_FILE_IN_TICK_JSON",
+                "mcfunction file cannot be defined inside tick.json. Use function entries only."
+            );
+            return;
+        }
+
+        if (functionExecutionDepth > 0) {
+            reportStructureError(
+                "FUNCTION_FILE_NESTED",
+                "mcfunction file cannot be defined inside another mcfunction file. Define it at the workspace top level."
+            );
+            return;
+        }
+
         register(name, handler);
 
         // Keep the convenient direct chat preview used for simple function IDs.
-        // Nested IDs such as sub/test are invoked reliably through Command.mcFunction().
-        player.onChat(name, handler);
+        // Wrap the callback so nested project containers are rejected consistently
+        // whether the function is invoked from chat or Command.mcFunction().
+        player.onChat(name, function () {
+            invokeFunctionHandler(handler);
+        });
     }
 
     /**
@@ -51,7 +86,7 @@ namespace FunctionFile {
     export function runPreview(name: string): boolean {
         for (let i = 0; i < functionNames.length; i++) {
             if (functionNames[i] == name) {
-                functionHandlers[i]();
+                invokeFunctionHandler(functionHandlers[i]);
                 return true;
             }
         }
@@ -62,18 +97,36 @@ namespace FunctionFile {
     /**
      * Define the project-level functions/tick.json file.
      *
-     * Put one or more FunctionFile.tickValue("path/to/function") blocks inside.
-     * Their order becomes the order of the future tick.json "values" array.
+     * Canonical body rule: ONLY FunctionFile.tickValue("path/to/function") entries.
+     * Their order becomes the future tick.json "values" array order.
      *
      * This is project/function metadata, not a Minecraft command AST node.
      */
     //% blockId=function_file_tick_json
     //% group="TICK.JSON" weight=100
     //% block="tick.json"
+    //% topblock=true
     export function tickJson(handler: () => void): void {
-        // There is only one functions/tick.json per Behavior Pack. If the MakeCode
-        // workspace contains another tickJson() declaration, preview treats the
-        // latest declaration as the active file instead of merging hidden state.
+        if (collectingTickValues) {
+            reportStructureError(
+                "TICK_JSON_NESTED",
+                "tick.json cannot be nested inside tick.json."
+            );
+            return;
+        }
+
+        if (functionExecutionDepth > 0) {
+            reportStructureError(
+                "TICK_JSON_IN_FUNCTION_FILE",
+                "tick.json cannot be defined inside an mcfunction file. Define it at the workspace top level."
+            );
+            return;
+        }
+
+        // There is only one functions/tick.json per Behavior Pack. The block editor
+        // treats this as a top-level container. If JavaScript contains another
+        // declaration, the future Project Validator/Converter must report it.
+        // Preview keeps the latest declaration active to remain deterministic.
         tickFile = MCFunctionProject.createTickFile();
         collectingTickValues = true;
         handler();
@@ -84,7 +137,7 @@ namespace FunctionFile {
 
     /**
      * Add one function path to the current tick.json "values" array.
-     * This block is intended to be nested inside FunctionFile.tickJson().
+     * This is the ONLY canonical statement allowed inside FunctionFile.tickJson().
      */
     //% blockId=function_file_tick_value
     //% group="TICK.JSON" weight=90
@@ -92,11 +145,13 @@ namespace FunctionFile {
     //% name.shadow="text"
     //% name.defl="tick/main"
     //% blockAllowMultiple=1
+    //% topblock=false
     export function tickValue(name: string): void {
-        // Keep runtime preview safe when this statement is accidentally detached
-        // from its tick.json container. The Converter can report a structural
-        // validation issue later; preview simply ignores the orphan entry.
         if (!collectingTickValues) {
+            reportStructureError(
+                "TICK_VALUE_OUTSIDE_TICK_JSON",
+                "tick.json function entry can only be used inside tick.json."
+            );
             return;
         }
 
@@ -104,6 +159,27 @@ namespace FunctionFile {
         // ordered JSON array, and repeating the same function ID is meaningful data
         // that should survive a round-trip exactly as authored.
         MCFunctionProject.addTickValue(tickFile, name);
+    }
+
+    /**
+     * Guard used by Command.* runtime preview.
+     * Commands are valid in mcfunction files, but not in tick.json metadata.
+     */
+    export function allowCommandExecution(): boolean {
+        if (!collectingTickValues) {
+            return true;
+        }
+
+        reportStructureError(
+            "COMMAND_IN_TICK_JSON",
+            "tick.json accepts only FunctionFile.tickValue() entries. Minecraft commands are not allowed here."
+        );
+        return false;
+    }
+
+    /** Preview/debug helper for future project-level validation and tests. */
+    export function isCollectingTickValues(): boolean {
+        return collectingTickValues;
     }
 
     function startTickPreview(): void {
@@ -131,6 +207,12 @@ namespace FunctionFile {
         });
     }
 
+    function invokeFunctionHandler(handler: () => void): void {
+        functionExecutionDepth++;
+        handler();
+        functionExecutionDepth--;
+    }
+
     function register(name: string, handler: () => void): void {
         // If Blocks <-> JavaScript is refreshed, replace an existing definition
         // rather than keeping duplicate preview callbacks in our own registry.
@@ -143,6 +225,22 @@ namespace FunctionFile {
 
         functionNames.push(name);
         functionHandlers.push(handler);
+    }
+
+    function reportStructureError(code: string, message: string): void {
+        // Avoid flooding chat when invalid project structure is reached from a
+        // tick function. One message per structural error code is enough for Preview.
+        for (let i = 0; i < reportedStructureErrorCodes.length; i++) {
+            if (reportedStructureErrorCodes[i] == code) {
+                return;
+            }
+        }
+
+        reportedStructureErrorCodes.push(code);
+
+        // Structural project errors are reported directly because they are not
+        // Minecraft Command AST validation errors.
+        player.say("Project Error [" + code + "]: " + message);
     }
 }
 

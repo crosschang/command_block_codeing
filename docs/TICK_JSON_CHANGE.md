@@ -30,3 +30,20 @@ FunctionFile
 ```
 
 The old `FunctionFile.tick()` API is removed from this revision.
+
+## Structural lock (0.0.18)
+
+The project now treats `FunctionFile.define()` and `FunctionFile.tickJson()` as explicit top-level project containers.
+
+Canonical rule:
+
+```text
+tick.json
+├─ FunctionFile.tickValue(...)
+├─ FunctionFile.tickValue(...)
+└─ ...
+```
+
+`Command.*`, nested `FunctionFile.define()`, and nested `FunctionFile.tickJson()` are not part of the canonical tick.json body. Runtime Preview guards reject this extension's invalid APIs in that context, and the future Converter must enforce the same rule when parsing JavaScript.
+
+Function invocation recursion through `Command.mcFunction()` remains allowed and is separate from illegal nested file definitions.

@@ -54,8 +54,10 @@
         "docs/PROJECT_PLAN.md",
         "docs/REGISTRY.md",
         "docs/LEGACY_P2_MIGRATION.md",
+        "docs/FUNCTION_FILE_STRUCTURE.md",
         "docs/TICK_JSON.md",
-        "docs/TICK_JSON_CHANGE.md"
+        "docs/TICK_JSON_CHANGE.md",
+        "docs/CHANGELOG_0.0.18.md"
     ],
     "testFiles": [
         "test.ts"
