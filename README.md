@@ -179,3 +179,18 @@ RAW COMMAND
 ```
 
 This is a Toolbox/UI organization only. The AST -> Validator -> Compiler architecture is unchanged.
+
+
+## tick.json
+
+Behavior Pack `functions/tick.json` is represented as project/function metadata, not as a command AST node.
+
+```ts
+FunctionFile.define("tick/main", function () {
+    Command.say("tick")
+})
+
+FunctionFile.tick("tick/main")
+```
+
+Runtime Preview targets 20 TPS with a ~50 ms MakeCode loop. Future Converter export maps the registered IDs to `functions/tick.json` `values`. See `docs/TICK_JSON.md`.

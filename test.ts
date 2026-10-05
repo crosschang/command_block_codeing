@@ -8,3 +8,10 @@ FunctionFile.define("main", function () {
         false
     )
 })
+
+
+FunctionFile.define("tick/main", function () {
+    Command.say("tick")
+})
+
+FunctionFile.tick("tick/main")

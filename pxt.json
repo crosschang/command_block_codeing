@@ -52,7 +52,8 @@
         "README.md",
         "docs/PROJECT_PLAN.md",
         "docs/REGISTRY.md",
-        "docs/LEGACY_P2_MIGRATION.md"
+        "docs/LEGACY_P2_MIGRATION.md",
+        "docs/TICK_JSON.md"
     ],
     "testFiles": [
         "test.ts"
