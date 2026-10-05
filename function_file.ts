@@ -26,12 +26,7 @@ namespace FunctionFile {
     //% name.defl="main"
     //% blockAllowMultiple=1
     export function define(name: string, handler: () => void): void {
-        player.say("MCFunction Preview: 적용중입니다.");
         register(name, handler);
-
-        // Keep the convenient direct chat preview used for simple function IDs.
-        // Nested IDs such as sub/test are invoked reliably through Command.mcFunction().
-        player.onChat(name, handler);
     }
 
     /**
