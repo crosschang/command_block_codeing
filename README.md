@@ -1,4 +1,4 @@
-# command_block_codeing
+# command_block_coding
 
 Minecraft Education / Bedrock용 MakeCode(PXT) command block 프로젝트입니다.
 목표는 실제 명령 제작에 사용할 수 있는 블록 IDE를 만들고, 이후 같은 Core Engine으로 `.mcfunction` 양방향 변환을 지원하는 것입니다.
@@ -183,14 +183,19 @@ This is a Toolbox/UI organization only. The AST -> Validator -> Compiler archite
 
 ## tick.json
 
-Behavior Pack `functions/tick.json` is represented as project/function metadata, not as a command AST node.
+Behavior Pack `functions/tick.json`은 Command AST가 아니라 `FunctionFile`의 프로젝트/함수 메타데이터로 표현합니다.
 
 ```ts
-FunctionFile.define("tick/main", function () {
+FunctionFile.define("board_game_system/ticking", function () {
     Command.say("tick")
 })
 
-FunctionFile.tick("tick/main")
+FunctionFile.tickJson(function () {
+    FunctionFile.tickValue("board_game_system/ticking")
+    FunctionFile.tickValue("debug/double_bonus_e2e/controller")
+})
 ```
 
-Runtime Preview targets 20 TPS with a ~50 ms MakeCode loop. Future Converter export maps the registered IDs to `functions/tick.json` `values`. See `docs/TICK_JSON.md`.
+Toolbox에서는 `mcfunction file`과 `tick.json`이 서로 독립된 최상위 컨테이너이고, `function [...]` entry 블록만 `tick.json` 안에 중첩됩니다.
+
+Future Converter는 entry 순서를 그대로 보존해 `functions/tick.json`의 `values` 배열로 출력합니다. Runtime Preview는 약 50 ms 주기로 등록된 함수들을 배열 순서대로 실행합니다. 자세한 내용은 `docs/TICK_JSON.md`를 참고하세요.

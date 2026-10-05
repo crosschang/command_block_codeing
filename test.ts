@@ -9,9 +9,15 @@ FunctionFile.define("main", function () {
     )
 })
 
-
-FunctionFile.define("tick/main", function () {
+FunctionFile.define("board_game_system/ticking", function () {
     Command.say("tick")
 })
 
-FunctionFile.tick("tick/main")
+FunctionFile.define("debug/double_bonus_e2e/controller", function () {
+    Command.say("double bonus e2e")
+})
+
+FunctionFile.tickJson(function () {
+    FunctionFile.tickValue("board_game_system/ticking")
+    FunctionFile.tickValue("debug/double_bonus_e2e/controller")
+})

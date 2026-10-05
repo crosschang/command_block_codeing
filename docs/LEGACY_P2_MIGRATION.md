@@ -4,7 +4,7 @@
 
 ## 목적
 
-`block_command_maker` 레거시에서 이미 구현된 공통 좌표 타입과 TP 명령을 `command_block_codeing`의 현재 Core Engine에 선별 이식한다.
+`block_command_maker` 레거시에서 이미 구현된 공통 좌표 타입과 TP 명령을 `command_block_coding`의 현재 Core Engine에 선별 이식한다.
 
 현재 프로젝트의 공통 실행 경로를 유지한다.
 

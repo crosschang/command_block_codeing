@@ -1,16 +1,18 @@
 /**
- * Represents one .mcfunction file in Blocks/JavaScript.
+ * Represents .mcfunction files and function metadata in Blocks/JavaScript.
  *
  * Converter meaning:
  *   FunctionFile.define("main", ...) -> functions/main.mcfunction
+ *   FunctionFile.tickJson(...)       -> functions/tick.json
  *
  * Minecraft Education runtime preview:
- *   - top-level simple IDs can be triggered from chat
- *   - Command.mcFunction("id") resolves MakeCode-defined files here first
+ *   - FunctionFile.define() registers preview handlers for MakeCode-defined files
+ *   - Command.mcFunction("id") resolves those handlers first
+ *   - FunctionFile.tickJson() approximates tick.json by running every registered
+ *     tickValue() entry in declaration order about every 50 ms
  *
- * The handler registry is PREVIEW ONLY.
- * FunctionFile.define()/tick() are canonical project declarations that the
- * future Converter maps to .mcfunction files and functions/tick.json.
+ * The runtime registries below are PREVIEW ONLY. The canonical project declarations
+ * are define()/tickJson()/tickValue(), which the future Converter maps to files.
  */
 //% color=#9966FF weight=95 icon="\uf15b"
 //% groups='["FUNCTION FILE", "TICK.JSON"]'
@@ -18,10 +20,11 @@ namespace FunctionFile {
     let functionNames: string[] = [];
     let functionHandlers: (() => void)[] = [];
 
-    // Runtime-preview representation of functions/tick.json.
-    // Converter will map these IDs to the ordered `values` array.
-    let tickFunctionNames: string[] = [];
+    // Project-level representation of functions/tick.json.
+    // Keep declaration order because Minecraft executes the listed functions in order.
+    let tickFile: MCFunctionProject.TickFile = MCFunctionProject.createTickFile();
     let tickPreviewStarted = false;
+    let collectingTickValues = false;
 
     /**
      * Define one mcfunction file.
@@ -57,39 +60,50 @@ namespace FunctionFile {
     }
 
     /**
-     * Add a function to functions/tick.json.
+     * Define the project-level functions/tick.json file.
      *
-     * Converter meaning:
-     *   FunctionFile.tick("game/update")
-     *   -> functions/tick.json { "values": ["game/update"] }
+     * Put one or more FunctionFile.tickValue("path/to/function") blocks inside.
+     * Their order becomes the order of the future tick.json "values" array.
      *
-     * Runtime preview:
-     *   repeats the registered function about every 50 ms (20 TPS target).
-     *   This approximates tick.json for editing/testing only; Minecraft's real
-     *   gameplay tick scheduler remains the authority after export.
+     * This is project/function metadata, not a Minecraft command AST node.
      */
-    //% blockId=function_file_tick
-    //% group="TICK.JSON" weight=90
-    //% block="tick.json run function %name every tick"
-    //% name.shadow="text"
-    //% name.defl="tick/main"
-    //% blockAllowMultiple=1
-    export function tick(name: string): void {
-        registerTick(name);
+    //% blockId=function_file_tick_json
+    //% group="TICK.JSON" weight=100
+    //% block="tick.json"
+    export function tickJson(handler: () => void): void {
+        // There is only one functions/tick.json per Behavior Pack. If the MakeCode
+        // workspace contains another tickJson() declaration, preview treats the
+        // latest declaration as the active file instead of merging hidden state.
+        tickFile = MCFunctionProject.createTickFile();
+        collectingTickValues = true;
+        handler();
+        collectingTickValues = false;
+
         startTickPreview();
     }
 
-    function registerTick(name: string): void {
-        // Avoid accidental runaway registration when this declaration is placed
-        // inside a function body. A tick.json values entry is treated as unique
-        // in the editor model.
-        for (let i = 0; i < tickFunctionNames.length; i++) {
-            if (tickFunctionNames[i] == name) {
-                return;
-            }
+    /**
+     * Add one function path to the current tick.json "values" array.
+     * This block is intended to be nested inside FunctionFile.tickJson().
+     */
+    //% blockId=function_file_tick_value
+    //% group="TICK.JSON" weight=90
+    //% block="function %name"
+    //% name.shadow="text"
+    //% name.defl="tick/main"
+    //% blockAllowMultiple=1
+    export function tickValue(name: string): void {
+        // Keep runtime preview safe when this statement is accidentally detached
+        // from its tick.json container. The Converter can report a structural
+        // validation issue later; preview simply ignores the orphan entry.
+        if (!collectingTickValues) {
+            return;
         }
 
-        tickFunctionNames.push(name);
+        // Preserve declaration order. Do not de-duplicate here: tick.json is an
+        // ordered JSON array, and repeating the same function ID is meaningful data
+        // that should survive a round-trip exactly as authored.
+        MCFunctionProject.addTickValue(tickFile, name);
     }
 
     function startTickPreview(): void {
@@ -100,19 +114,17 @@ namespace FunctionFile {
         tickPreviewStarted = true;
 
         loops.forever(function () {
-            // Let project-level FunctionFile.define()/tick() declarations finish
-            // before the first preview tick runs.
+            // Approximate Minecraft's 20 TPS gameplay tick for editor preview.
+            // The exported Behavior Pack tick.json remains the runtime authority.
             loops.pause(50);
 
-            for (let i = 0; i < tickFunctionNames.length; i++) {
-                let functionId = tickFunctionNames[i];
+            for (let i = 0; i < tickFile.values.length; i++) {
+                let functionId = tickFile.values[i];
 
                 // Prefer MakeCode-defined FunctionFile handlers. If the function
-                // only exists in an active Behavior Pack, use the real command as
-                // the same fallback policy as Command.mcFunction().
+                // only exists in an active Behavior Pack, reuse the normal function
+                // command path so fallback still uses AST -> Validator -> Compiler.
                 if (!runPreview(functionId)) {
-                    // Reuse the normal Function command path so preview fallback
-                    // still goes through AST -> Validator -> Compiler.
                     Command.mcFunction(functionId);
                 }
             }

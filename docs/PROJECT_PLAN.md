@@ -1,4 +1,4 @@
-# command_block_codeing — Current Plan
+# command_block_coding — Current Plan
 
 ## Confirmed runtime structure
 
