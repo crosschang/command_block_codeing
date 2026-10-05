@@ -1,6 +1,5 @@
-// M0-2 compile smoke test.
-// Visible block/runtime path:
-Command.say("Hello World")
-
-// Core pipeline target result: "say Hello World"
-let compiledSay = Command.sayToMcfunction("Hello World")
+// Compile smoke test for the current public API.
+FunctionFile.define("main", function () {
+    Command.say("Hello World")
+    Command.mcFunction("sub/test")
+})

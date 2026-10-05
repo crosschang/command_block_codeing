@@ -1,9 +1,23 @@
-/**
- * Minecraft command compiler - M0 SAY only.
- */
-namespace CommandCompiler {
-    /** Compiles a SAY AST node to one executable .mcfunction command line. */
-    export function compileSay(command: CommandAST.SayCommand): string {
-        return "say " + command.message
+/** Minecraft command compiler: AST -> .mcfunction command line. */
+namespace MCFunctionCompiler {
+    export function compileCommand(command: MCFunctionAST.CommandNode): string {
+        switch (command.kind) {
+            case MCFunctionAST.CommandKind.Say:
+                return compileSay(<MCFunctionAST.SayCommand>command);
+
+            case MCFunctionAST.CommandKind.McFunction:
+                return compileMcFunction(<MCFunctionAST.McFunctionCommand>command);
+
+            default:
+                return "";
+        }
+    }
+
+    function compileSay(command: MCFunctionAST.SayCommand): string {
+        return "say " + command.message;
+    }
+
+    function compileMcFunction(command: MCFunctionAST.McFunctionCommand): string {
+        return "function " + command.functionId;
     }
 }

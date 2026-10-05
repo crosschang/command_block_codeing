@@ -1,38 +1,44 @@
 /**
- * command_block_codeing
+ * COMMAND blocks.
  *
- * M0-2: tested COMMAND -> SAY block + minimal AST/Adapter/Compiler wiring.
- *
- * IMPORTANT:
- * - Keep the visible block shape and blockId stable.
- * - main.ts is the user's MakeCode workspace source; block APIs live here.
+ * Runtime preview and Converter export share the same compiler output:
+ * Block -> AST -> Compiler -> command string
  */
-
 //% color=#4C97FF weight=100 icon="\uf1b2"
 namespace Command {
-    /**
-     * Says a message in Minecraft chat.
-     */
+    function executeCommand(command: MCFunctionAST.CommandNode): void {
+        let issues = MCFunctionValidator.validateCommand(command);
+
+        if (MCFunctionValidator.hasError(issues)) {
+            if (issues.length > 0) {
+                player.say("Command Error: " + issues[0].message);
+            }
+            return;
+        }
+
+        let compiled = MCFunctionCompiler.compileCommand(command);
+        if (compiled.length > 0) {
+            player.execute(compiled);
+        }
+    }
+
+    /** Execute a Minecraft `say` command. */
     //% blockId=command_say
     //% block="SAY %message"
     //% message.shadow="text"
     //% message.defl="Hello World"
     export function say(message: string): void {
-        // Build the same command through the Core pipeline without changing
-        // the already-tested in-game SAY behavior.
-        sayToMcfunction(message)
-        player.say(message)
+        let command = MCFunctionBlocks.createSayCommand(message);
+        executeCommand(command);
     }
 
-    /**
-     * Converts a SAY block value to a single .mcfunction command line.
-     *
-     * This function intentionally has no block annotation in M0-2; it is a
-     * JavaScript/Core API used to verify the compiler while the visible SAY
-     * block remains unchanged.
-     */
-    export function sayToMcfunction(message: string): string {
-        const command = CommandBlockAdapter.say(message)
-        return CommandCompiler.compileSay(command)
+    /** Execute another mcfunction by function ID. */
+    //% blockId=command_mcfunction
+    //% block="MCFUNCTION %functionId"
+    //% functionId.shadow="text"
+    //% functionId.defl="sub/test"
+    export function mcFunction(functionId: string): void {
+        let command = MCFunctionBlocks.createMcFunctionCommand(functionId);
+        executeCommand(command);
     }
 }

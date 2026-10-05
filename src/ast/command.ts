@@ -1,20 +1,14 @@
 /**
- * Minecraft command AST - M0 SAY only.
- *
- * This file intentionally contains no MakeCode block annotations and no
- * Minecraft runtime calls. It is the command data model used by adapters and
- * compilers.
+ * Minecraft command AST core.
+ * Command meaning lives here, not in block text or raw strings.
  */
-namespace CommandAST {
-    /** SAY command node. */
-    export interface SayCommand {
-        message: string
+namespace MCFunctionAST {
+    export enum CommandKind {
+        Say = 1,
+        McFunction = 2
     }
 
-    /** Creates a SAY command node. */
-    export function createSay(message: string): SayCommand {
-        return {
-            message: message
-        }
+    export interface CommandNode {
+        kind: CommandKind;
     }
 }
