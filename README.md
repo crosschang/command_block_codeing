@@ -77,3 +77,10 @@ This version was rebuilt from the last Selector-PASS baseline.
 It intentionally reuses the existing `mcfunction_item_id_text_shadow` and does
 not redeclare it. Item component UI lives in the unique
 `MCFunctionItemComponents` namespace, while the Toolbox label remains `ITEM`.
+
+
+## GIVE block policy
+
+The separate basic GIVE block was removed. The single visible `GIVE` block keeps
+`target`, `item`, `amount`, `data`, and `components`, so the same block covers
+both ordinary give commands and component-enabled give commands.
