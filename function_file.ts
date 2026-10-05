@@ -5,10 +5,17 @@
  *   FunctionFile.define("main", ...) -> functions/main.mcfunction
  *
  * Minecraft Education runtime preview:
- *   typing `main` in chat runs the nested blocks.
+ *   - top-level simple IDs can be triggered from chat
+ *   - Command.mcFunction("id") resolves MakeCode-defined files here first
+ *
+ * This registry is PREVIEW ONLY.
+ * The real export meaning remains a Minecraft .mcfunction file.
  */
 //% color=#9966FF weight=95 icon="\uf15b"
 namespace FunctionFile {
+    let functionNames: string[] = [];
+    let functionHandlers: (() => void)[] = [];
+
     /**
      * Define one mcfunction file.
      * The callback body becomes the command list for that file in Converter Edition.
@@ -19,6 +26,39 @@ namespace FunctionFile {
     //% name.defl="main"
     //% blockAllowMultiple=1
     export function define(name: string, handler: () => void): void {
+        register(name, handler);
+
+        // Keep the convenient direct chat preview used for simple function IDs.
+        // Nested IDs such as sub/test are invoked reliably through Command.mcFunction().
         player.onChat(name, handler);
+    }
+
+    /**
+     * Runtime-preview resolver.
+     * Returns true when the requested function is defined in this MakeCode project.
+     */
+    export function runPreview(name: string): boolean {
+        for (let i = 0; i < functionNames.length; i++) {
+            if (functionNames[i] == name) {
+                functionHandlers[i]();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function register(name: string, handler: () => void): void {
+        // If Blocks <-> JavaScript is refreshed, replace an existing definition
+        // rather than keeping duplicate preview callbacks in our own registry.
+        for (let i = 0; i < functionNames.length; i++) {
+            if (functionNames[i] == name) {
+                functionHandlers[i] = handler;
+                return;
+            }
+        }
+
+        functionNames.push(name);
+        functionHandlers.push(handler);
     }
 }

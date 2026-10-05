@@ -39,6 +39,18 @@ namespace Command {
     //% functionId.defl="sub/test"
     export function mcFunction(functionId: string): void {
         let command = MCFunctionBlocks.createMcFunctionCommand(functionId);
+
+        // Converter/export meaning still comes from the AST + Compiler:
+        //   function sub/test
+        //
+        // Runtime preview is different: FunctionFile.define() does not create a
+        // real Behavior Pack file, so resolve MakeCode-defined functions first.
+        if (FunctionFile.runPreview(functionId)) {
+            return;
+        }
+
+        // Fallback: allow calling a real function that already exists
+        // in the world's active Behavior Pack.
         executeCommand(command);
     }
 }

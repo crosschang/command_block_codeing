@@ -51,3 +51,15 @@ function sub/test
 - Browser Companion
 - Starter / READY 관련 코드
 - `.mcfunction` Parser / Converter UI (다음 단계)
+
+
+## Runtime preview for nested function IDs
+
+`FunctionFile.define("sub/test", ...)` is a MakeCode-side definition for the
+Converter. It does not physically create `functions/sub/test.mcfunction` in an
+active Behavior Pack.
+
+For preview, `Command.mcFunction("sub/test")` first resolves the matching
+`FunctionFile.define()` callback and runs it directly. If no matching MakeCode
+definition exists, it falls back to the real Minecraft `function sub/test`
+command so external Behavior Pack functions can still be tested.
