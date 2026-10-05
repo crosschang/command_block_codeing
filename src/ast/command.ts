@@ -7,7 +7,8 @@ namespace MCFunctionAST {
         Raw = 0,
         Say = 1,
         McFunction = 2,
-        Give = 3
+        Give = 3,
+        Teleport = 4
     }
 
     export interface CommandNode {

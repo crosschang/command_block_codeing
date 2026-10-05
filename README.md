@@ -53,8 +53,18 @@ FunctionFile.define("main", function () {
 - `MCFUNCTION`
 - `GIVE`
 - `RAW COMMAND`
+- `TP` / `TELEPORT` (position / entity / rotation / facing position / facing entity)
 
 `RAW COMMAND`는 아직 구조화 블록으로 지원하지 않는 명령을 원문 그대로 AST에 보존하고 실행하기 위한 escape hatch입니다.
+
+레거시에서 검증된 Position / Rotation / Facing / TP 구조도 현재 Core Engine에 맞춰 복구했습니다.
+
+- Position: absolute `10 64 -20`, relative `~ ~1 ~`, local `^ ^ ^3`
+- Rotation: absolute / `~` relative
+- Facing AST: position / entity, `EntityAnchor.Eyes` / `Feet` 보존
+- TP: 5개 모드 모두 `AST → Validator → Compiler → player.execute()` 공통 경로 사용
+
+`EntityAnchor`의 `eyes` / `feet`는 TP 문법에 붙이지 않고 향후 modern `execute facing entity`에서 재사용합니다.
 
 ## Selector
 

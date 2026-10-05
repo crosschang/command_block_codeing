@@ -91,4 +91,106 @@ namespace Command {
         );
         executeCommand(command);
     }
+
+
+    /** Teleport a target to a position. */
+    //% blockId=mcfunction_tp_position
+    //% block="TP target $target to position $destination check blocks $checkForBlocks"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_position_relative"
+    //% checkForBlocks.defl=false
+    export function teleportToPosition(
+        target: MCFunctionFields.SelectorValue,
+        destination: MCFunctionPositionFields.PositionValue,
+        checkForBlocks: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportToPositionCommand(
+                target.selector, destination.position, checkForBlocks
+            )
+        );
+    }
+
+    /** Teleport a target to another entity. */
+    //% blockId=mcfunction_tp_entity
+    //% block="TP target $target to entity $destination check blocks $checkForBlocks"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_selector_nearest_player"
+    //% checkForBlocks.defl=false
+    export function teleportToEntity(
+        target: MCFunctionFields.SelectorValue,
+        destination: MCFunctionFields.SelectorValue,
+        checkForBlocks: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportToEntityCommand(
+                target.selector, destination.selector, checkForBlocks
+            )
+        );
+    }
+
+    /** Teleport a target to a position with yaw/pitch rotation. */
+    //% blockId=mcfunction_tp_rotation
+    //% block="TP target $target to position $destination rotation $rotation check blocks $checkForBlocks"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_position_relative"
+    //% rotation.shadow="mcfunction_rotation_absolute"
+    //% checkForBlocks.defl=false
+    export function teleportWithRotation(
+        target: MCFunctionFields.SelectorValue,
+        destination: MCFunctionPositionFields.PositionValue,
+        rotation: MCFunctionRotationFields.RotationValue,
+        checkForBlocks: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportWithRotationCommand(
+                target.selector, destination.position, rotation.rotation, checkForBlocks
+            )
+        );
+    }
+
+    /** Teleport a target to a position while facing another position. */
+    //% blockId=mcfunction_tp_facing_position
+    //% block="TP target $target to position $destination facing position $facingPosition check blocks $checkForBlocks"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_position_relative"
+    //% facingPosition.shadow="mcfunction_position_relative"
+    //% checkForBlocks.defl=false
+    export function teleportFacingPosition(
+        target: MCFunctionFields.SelectorValue,
+        destination: MCFunctionPositionFields.PositionValue,
+        facingPosition: MCFunctionPositionFields.PositionValue,
+        checkForBlocks: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportFacingPositionCommand(
+                target.selector, destination.position, facingPosition.position, checkForBlocks
+            )
+        );
+    }
+
+    /** Teleport a target to a position while facing an entity. */
+    //% blockId=mcfunction_tp_facing_entity
+    //% block="TP target $target to position $destination facing entity $facingEntity check blocks $checkForBlocks"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_position_relative"
+    //% facingEntity.shadow="mcfunction_selector_nearest_player"
+    //% checkForBlocks.defl=false
+    export function teleportFacingEntity(
+        target: MCFunctionFields.SelectorValue,
+        destination: MCFunctionPositionFields.PositionValue,
+        facingEntity: MCFunctionFields.SelectorValue,
+        checkForBlocks: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportFacingEntityCommand(
+                target.selector, destination.position, facingEntity.selector, checkForBlocks
+            )
+        );
+    }
 }

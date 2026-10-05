@@ -232,6 +232,126 @@ namespace MCFunctionValidator {
         return issues;
     }
 
+
+
+    function isValidCoordinateMode(mode: MCFunctionAST.CoordinateMode): boolean {
+        return mode == MCFunctionAST.CoordinateMode.Absolute ||
+            mode == MCFunctionAST.CoordinateMode.Relative ||
+            mode == MCFunctionAST.CoordinateMode.Local;
+    }
+
+    function validateCoordinate(
+        coordinate: MCFunctionAST.Coordinate,
+        axis: string,
+        issues: ValidationIssue[]
+    ): void {
+        if (!isValidCoordinateMode(coordinate.mode)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "POSITION_MODE_INVALID_" + axis,
+                "Invalid coordinate mode for " + axis + "."
+            );
+        }
+    }
+
+    export function validatePosition(position: MCFunctionAST.Position): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        validateCoordinate(position.x, "X", issues);
+        validateCoordinate(position.y, "Y", issues);
+        validateCoordinate(position.z, "Z", issues);
+
+        let localCount = 0;
+        if (position.x.mode == MCFunctionAST.CoordinateMode.Local) localCount++;
+        if (position.y.mode == MCFunctionAST.CoordinateMode.Local) localCount++;
+        if (position.z.mode == MCFunctionAST.CoordinateMode.Local) localCount++;
+
+        if (localCount > 0 && localCount < 3) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "POSITION_LOCAL_MIXED",
+                "Local (^) coordinates cannot be mixed with absolute or relative coordinates in one position."
+            );
+        }
+
+        return issues;
+    }
+
+    function validateRotationValue(
+        value: MCFunctionAST.RotationValue,
+        axis: string,
+        issues: ValidationIssue[]
+    ): void {
+        if (
+            value.mode != MCFunctionAST.RotationMode.Absolute &&
+            value.mode != MCFunctionAST.RotationMode.Relative
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "ROTATION_MODE_INVALID_" + axis,
+                "Invalid rotation mode for " + axis + "."
+            );
+        }
+    }
+
+    export function validateRotation(rotation: MCFunctionAST.Rotation): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+        validateRotationValue(rotation.yaw, "YAW", issues);
+        validateRotationValue(rotation.pitch, "PITCH", issues);
+        return issues;
+    }
+
+    export function validateTeleportCommand(
+        command: MCFunctionAST.TeleportCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        appendIssues(issues, validateSelector(command.target));
+
+        if (command.mode == MCFunctionAST.TeleportMode.Entity) {
+            if (!command.destinationEntity) {
+                addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_ENTITY_MISSING", "Teleport destination entity is missing.");
+            } else {
+                appendIssues(issues, validateSelector(command.destinationEntity));
+            }
+            return issues;
+        }
+
+        if (!command.destinationPosition) {
+            addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_POSITION_MISSING", "Teleport destination position is missing.");
+            return issues;
+        }
+
+        appendIssues(issues, validatePosition(command.destinationPosition));
+
+        if (command.mode == MCFunctionAST.TeleportMode.Rotation) {
+            if (!command.rotation) {
+                addIssue(issues, ValidationLevel.Error, "TP_ROTATION_MISSING", "Teleport rotation is missing.");
+            } else {
+                appendIssues(issues, validateRotation(command.rotation));
+            }
+        } else if (command.mode == MCFunctionAST.TeleportMode.FacingPosition) {
+            if (!command.facingPosition) {
+                addIssue(issues, ValidationLevel.Error, "TP_FACING_POSITION_MISSING", "Teleport facing position is missing.");
+            } else {
+                appendIssues(issues, validatePosition(command.facingPosition));
+            }
+        } else if (command.mode == MCFunctionAST.TeleportMode.FacingEntity) {
+            if (!command.facingEntity) {
+                addIssue(issues, ValidationLevel.Error, "TP_FACING_ENTITY_MISSING", "Teleport facing entity is missing.");
+            } else {
+                appendIssues(issues, validateSelector(command.facingEntity));
+            }
+        } else if (command.mode != MCFunctionAST.TeleportMode.Position) {
+            addIssue(issues, ValidationLevel.Error, "TP_MODE_INVALID", "Unsupported teleport mode.");
+        }
+
+        return issues;
+    }
+
     export function validateCommand(command: MCFunctionAST.CommandNode): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
@@ -258,6 +378,10 @@ namespace MCFunctionValidator {
 
         if (command.kind == MCFunctionAST.CommandKind.Give) {
             appendIssues(issues, validateGiveCommand(<MCFunctionAST.GiveCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Teleport) {
+            appendIssues(issues, validateTeleportCommand(<MCFunctionAST.TeleportCommand>command));
         }
 
         return issues;

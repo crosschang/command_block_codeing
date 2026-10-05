@@ -39,4 +39,58 @@ namespace MCFunctionBlocks {
             )
         );
     }
+
+
+    export function createTeleportToPositionCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.Position,
+        checkForBlocks: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportToPositionCommand(
+            target, destination, checkForBlocks
+        );
+    }
+
+    export function createTeleportToEntityCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.Selector,
+        checkForBlocks: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportToEntityCommand(
+            target, destination, checkForBlocks
+        );
+    }
+
+    export function createTeleportWithRotationCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.Position,
+        rotation: MCFunctionAST.Rotation,
+        checkForBlocks: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportWithRotationCommand(
+            target, destination, rotation, checkForBlocks
+        );
+    }
+
+    export function createTeleportFacingPositionCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.Position,
+        facingPosition: MCFunctionAST.Position,
+        checkForBlocks: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportFacingPositionCommand(
+            target, destination, facingPosition, checkForBlocks
+        );
+    }
+
+    export function createTeleportFacingEntityCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.Position,
+        facingEntity: MCFunctionAST.Selector,
+        checkForBlocks: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportFacingEntityCommand(
+            target, destination, facingEntity, checkForBlocks
+        );
+    }
 }
