@@ -62,3 +62,12 @@ namespace FunctionFile {
         functionHandlers.push(handler);
     }
 }
+
+namespace Preview {
+    //% blockId=mcfunction_preview_ready
+    //% block="MCFunction Preview 준비"
+    //% weight=100
+    export function ready(): void {
+        Command.say("MCFunction Preview Ready")
+    }
+}
