@@ -2,6 +2,9 @@
 namespace MCFunctionCompiler {
     export function compileCommand(command: MCFunctionAST.CommandNode): string {
         switch (command.kind) {
+            case MCFunctionAST.CommandKind.Raw:
+                return compileRaw(<MCFunctionAST.RawCommand>command);
+
             case MCFunctionAST.CommandKind.Say:
                 return compileSay(<MCFunctionAST.SayCommand>command);
 
@@ -14,6 +17,10 @@ namespace MCFunctionCompiler {
             default:
                 return "";
         }
+    }
+
+    function compileRaw(command: MCFunctionAST.RawCommand): string {
+        return command.raw;
     }
 
     function compileSay(command: MCFunctionAST.SayCommand): string {

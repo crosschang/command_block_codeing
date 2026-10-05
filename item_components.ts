@@ -3,7 +3,7 @@
  *
  * This intentionally reuses the existing mcfunction_item_id_text_shadow from
  * src/fields/value_input.ts. Do NOT redefine that blockId here.
- * Generated Registry libraries are not included yet.
+ * Full Registry reporters can replace these direct-input shadows.
  */
 //% color="#C98900" weight=88 icon="\uf06b" block="ITEM"
 //% groups='["Item Components"]'

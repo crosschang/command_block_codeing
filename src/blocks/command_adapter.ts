@@ -1,5 +1,9 @@
 /** MakeCode block input -> Minecraft command AST adapter. */
 namespace MCFunctionBlocks {
+    export function createRawCommand(text: string): MCFunctionAST.RawCommand {
+        return MCFunctionAST.createRawCommand(text);
+    }
+
     export function createSayCommand(message: string): MCFunctionAST.SayCommand {
         return MCFunctionAST.createSayCommand(message);
     }

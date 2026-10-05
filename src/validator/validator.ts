@@ -235,6 +235,13 @@ namespace MCFunctionValidator {
     export function validateCommand(command: MCFunctionAST.CommandNode): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
+        if (command.kind == MCFunctionAST.CommandKind.Raw) {
+            let raw = <MCFunctionAST.RawCommand>command;
+            if (!raw.raw || raw.raw.length == 0) {
+                addIssue(issues, ValidationLevel.Error, "RAW_EMPTY_COMMAND", "RAW COMMAND cannot be empty.");
+            }
+        }
+
         if (command.kind == MCFunctionAST.CommandKind.Say) {
             let say = <MCFunctionAST.SayCommand>command;
             if (!say.message || say.message.length == 0) {

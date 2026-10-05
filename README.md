@@ -1,98 +1,144 @@
 # command_block_codeing
 
-Minecraft Education MakeCode에서 실제 Minecraft 명령을 블록으로 작성하고, 향후 `.mcfunction`과 양방향 변환하기 위한 프로젝트입니다.
+Minecraft Education / Bedrock용 MakeCode(PXT) command block 프로젝트입니다.
+목표는 실제 명령 제작에 사용할 수 있는 블록 IDE를 만들고, 이후 같은 Core Engine으로 `.mcfunction` 양방향 변환을 지원하는 것입니다.
 
-## 현재 구현
+## Core
 
-### Function File
+```text
+MakeCode Block
+→ Block Adapter
+→ Minecraft Command AST
+→ Validator
+→ Compiler
+→ player.execute()   (Minecraft Education Preview)
+→ .mcfunction        (future Converter)
+```
+
+명령 의미의 Source of Truth는 블록 문자열이 아니라 Minecraft Command AST입니다.
+
+## Function File
 
 ```ts
 FunctionFile.define("main", function () {
+    Preview.ready()
     Command.say("Hello World")
     Command.mcFunction("sub/test")
 })
 ```
 
-MakeCode 인게임 테스트에서는 `main`을 채팅에 입력하면 내부 블록이 실행됩니다.
-Converter Edition에서는 위 구조를 `functions/main.mcfunction` 파일 정의로 해석합니다.
+- Preview: 채팅에 `main`을 입력해 실행
+- Converter: `FunctionFile.define("main", ...)`를 `functions/main.mcfunction`으로 해석
+- `Command.mcFunction("sub/test")`는 MakeCode 안에 같은 FunctionFile이 있으면 Preview callback을 먼저 실행하고, 없으면 실제 `function sub/test` 명령으로 fallback
 
-### COMMAND
+## PREVIEW READY
 
-- `SAY [message]`
-- `MCFUNCTION [function id]`
-
-두 명령 모두 다음 경로를 사용합니다.
-
-```text
-Block -> Adapter -> AST -> Validator -> Compiler
-                               |
-                               +-> player.execute() (runtime preview)
-                               +-> .mcfunction       (Converter)
-```
-
-예:
+Minecraft Education Cold Start에서 첫 command 실행이 늦거나 누락되는 현상을 실제 테스트에서 확인했습니다.
+사용자가 `FunctionFile` 안에 `Preview.ready()` 블록을 **직접 배치**하면 첫 command가 즉발로 동작했습니다.
 
 ```ts
-Command.say("Hello")
-Command.mcFunction("sub/test")
+FunctionFile.define("main", function () {
+    Preview.ready()
+    Command.give(/* ... */)
+})
 ```
 
-컴파일 의미:
+`Preview.ready()`는 내부적으로 Preview용 SAY를 실행합니다. 미래 Converter에서는 이 블록을 메타 블록으로 취급하여 `.mcfunction` 결과에서 제외합니다.
 
-```mcfunction
-say Hello
-function sub/test
-```
+## COMMAND
 
-## 현재 제외
+현재 복구/구현된 명령:
 
-- Generated Item / Block / Entity libraries
-- Registry picker UI
-- Browser Companion
-- Starter / READY 관련 코드
-- `.mcfunction` Parser / Converter UI (다음 단계)
+- `SAY`
+- `MCFUNCTION`
+- `GIVE`
+- `RAW COMMAND`
 
+`RAW COMMAND`는 아직 구조화 블록으로 지원하지 않는 명령을 원문 그대로 AST에 보존하고 실행하기 위한 escape hatch입니다.
 
-## Runtime preview for nested function IDs
+## Selector
 
-`FunctionFile.define("sub/test", ...)` is a MakeCode-side definition for the
-Converter. It does not physically create `functions/sub/test.mcfunction` in an
-active Behavior Pack.
+레거시에서 검증했던 Selector Core를 복구했습니다.
 
-For preview, `Command.mcFunction("sub/test")` first resolves the matching
-`FunctionFile.define()` callback and runs it directly. If no matching MakeCode
-definition exists, it falls back to the real Minecraft `function sub/test`
-command so external Behavior Pack functions can still be tested.
+- `@a`, `@e`, `@p`, `@r`, `@s`
+- Dialogue용 `@initiator`
+- type / tag / name / gamemode / 좌표·영역 / 거리 / count / level / rotation / scores / family / hasitem
 
-## Legacy Selector core restored (v0.3.0)
+## Full Registry Library
 
-The proven legacy Selector system is restored without the old generated Registry libraries.
-It includes `@a`, `@e`, `@p`, `@r`, `@s`, and Dialogue `@initiator`, plus the existing legacy selector-condition chain (type/tag/name/gamemode/area/range/scores/family/hasitem).
+Quick Preset은 사용하지 않습니다.
 
-The current Converter design is recorded in `docs/PROJECT_PLAN.md` but implementation is deferred while command blocks are expanded.
+현재 검색용 Registry Library:
 
-## GIVE + Item Components clean restore (v0.4.2)
+- Item
+- Block
+- Entity
+- Effect
+- Particle
+- Family
+- Event
+- Spawn Event
 
-This version was rebuilt from the last Selector-PASS baseline.
-It intentionally reuses the existing `mcfunction_item_id_text_shadow` and does
-not redeclare it. Item component UI lives in the unique
-`MCFunctionItemComponents` namespace, while the Toolbox label remains `ITEM`.
-
-
-## GIVE block policy
-
-The separate basic GIVE block was removed. The single visible `GIVE` block keeps
-`target`, `item`, `amount`, `data`, and `components`, so the same block covers
-both ordinary give commands and component-enabled give commands.
-
-
-## Runtime Preview 안내 (A: pause 없음)
-
-`FunctionFile.define("main", ...)`가 등록되면 Minecraft 채팅에 다음 안내가 표시됩니다.
+Item/Block/Entity/Effect/Particle/Family는 검색 가능한 reporter block으로 생성합니다.
+Event와 Spawn Event는 **서로 다른 Toolbox 카테고리**로 만들고, 각 카테고리 안에서 `Zombie`, `Villager`, `Skeleton`처럼 엔티티별 구분선으로 나눕니다.
 
 ```text
-MCFunction Preview: 채팅에 main 입력하여 테스트
+EVENT
+├─ Zombie
+│  ├─ zombie event minecraft:...
+│  └─ ...
+├─ Villager
+│  └─ ...
+
+SPAWN EVENT
+├─ Zombie
+│  ├─ zombie spawn event minecraft:...
+│  └─ ...
+└─ Villager
+   └─ ...
 ```
 
-이 메시지는 MakeCode 런타임 테스트용이며 Converter의 `.mcfunction` 출력에는 포함하지 않습니다.
-현재 A 테스트 조건이므로 별도의 `loops.pause()`는 넣지 않았습니다.
+직접 입력과 Custom Namespace/Custom Event도 계속 허용합니다. Registry는 whitelist가 아닙니다.
+
+Registry 데이터와 생성 코드는 분리되어 있습니다.
+
+```text
+registry/source/bedrock/*.json
+registry/derived/bedrock/*.json
+        ↓
+tools/generate_registry.ps1
+        ↓
+src/libraries/*_library.generated.ts
+```
+
+`Family`, `Event`, `Spawn Event`는 Mojang vanilla behavior entity JSON에서 파생할 수 있습니다.
+처음 받은 프로젝트에서 Event/Spawn Event가 비어 있다면 아래 명령을 한 번 실행하면 현재 Mojang 데이터로 채워집니다.
+
+```powershell
+.\tools\update_registry.ps1 -Apply
+```
+
+Minecraft 업데이트 확인:
+
+```text
+.\tools\update_registry.ps1
+```
+
+변경 내용을 확인한 뒤 적용:
+
+```text
+.\tools\update_registry.ps1 -Apply
+```
+
+자세한 내용은 `docs/REGISTRY.md`를 참고하세요.
+
+## Bedrock / Education
+
+Bedrock Registry와 Minecraft Education 전용 차이는 임의로 섞지 않습니다.
+Education 전용 값은 공식 자료 또는 실제 Education 검증 후 별도 overlay로 관리합니다.
+Registry에 없는 값도 Direct Input으로 사용할 수 있습니다.
+
+## 다음 단계
+
+현재는 Command Blocks와 공통 타입을 먼저 확장합니다.
+`.mcfunction` Parser / Converter UI는 Command Core가 충분히 안정화된 뒤 연결합니다.

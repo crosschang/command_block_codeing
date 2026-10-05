@@ -4,6 +4,7 @@
  */
 namespace MCFunctionAST {
     export enum CommandKind {
+        Raw = 0,
         Say = 1,
         McFunction = 2,
         Give = 3

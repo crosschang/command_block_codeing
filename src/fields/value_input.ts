@@ -15,13 +15,18 @@ namespace MCFunctionFields {
         }
     }
 
+    /** Common EntityValue adapter used by Registry and direct-input blocks. */
+    export function entity(entityId: string): EntityValue {
+        return new EntityValue(entityId);
+    }
+
     /** Direct/custom entity ID shadow used by Selector type conditions. */
     //% blockId=mcfunction_entity_select
     //% block="$entityId"
     //% blockHidden=true
     //% entityId.defl="minecraft:zombie"
     export function entityInput(entityId: string): EntityValue {
-        return new EntityValue(entityId);
+        return entity(entityId);
     }
 
     export class ItemValue {
@@ -60,5 +65,33 @@ namespace MCFunctionFields {
 
     export function block(blockId: string): BlockValue {
         return new BlockValue(blockId);
+    }
+}
+
+namespace MCFunctionFields {
+    /** Effect command token, for example `speed` or `night_vision`. */
+    export class EffectValue {
+        effectId: string;
+
+        constructor(effectId: string) {
+            this.effectId = effectId;
+        }
+    }
+
+    export function effect(effectId: string): EffectValue {
+        return new EffectValue(effectId);
+    }
+
+    /** Namespaced particle identifier, for example `minecraft:basic_flame_particle`. */
+    export class ParticleValue {
+        particleId: string;
+
+        constructor(particleId: string) {
+            this.particleId = particleId;
+        }
+    }
+
+    export function particle(particleId: string): ParticleValue {
+        return new ParticleValue(particleId);
     }
 }

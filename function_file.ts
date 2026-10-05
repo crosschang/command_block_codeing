@@ -63,9 +63,16 @@ namespace FunctionFile {
     }
 }
 
+/**
+ * Minecraft Education runtime preview helper.
+ *
+ * Place this as the first statement of a FunctionFile while testing in-game.
+ * It is PREVIEW metadata and must be ignored by the future .mcfunction Converter.
+ */
+//% color="#00A67E" weight=96 icon="\uf144" block="PREVIEW"
 namespace Preview {
     //% blockId=mcfunction_preview_ready
-    //% block="MCFunction Preview 준비"
+    //% block="▶ PREVIEW READY"
     //% weight=100
     export function ready(): void {
         Command.say("MCFunction Preview Ready")

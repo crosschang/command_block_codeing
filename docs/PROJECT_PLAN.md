@@ -43,19 +43,24 @@ Converter work is intentionally deferred until command-block coverage is stronge
 
 ## Legacy reuse policy
 
-Reuse proven Core code, not the old generated Library UI.
+Reuse proven Core code and restore only the Registry behavior that is useful for the production tool.
 
 Restored now:
-- Selector AST
-- Selector condition blocks
-- Range AST / Range blocks
-- Slot AST used by `hasitem`
+- Selector AST and Selector condition blocks
+- Range / Slot common types
 - Selector compiler
-- `@a`, `@e`, `@p`, `@r`, `@s`
-- Dialogue-only `@initiator`
+- `@a`, `@e`, `@p`, `@r`, `@s`, Dialogue-only `@initiator`
+- Generated searchable Registry reporters
+- Direct/custom input alongside Registry values
+- Raw Command AST / Compiler fallback
 
-Legacy generated Item/Block/Entity reporter libraries and Registry picker experiments are not restored.
-Direct ID input remains available so Custom Namespace support is preserved.
+Registry scope:
+- Item / Block / Entity / Effect / Particle
+- Family
+- Event and Spawn Event as separate Toolbox categories
+- Event/Spawn Event reporters grouped by entity inside each category
+
+Quick Preset is intentionally not restored.
 
 ## Next command-block work
 

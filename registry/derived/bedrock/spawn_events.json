@@ -1,0 +1,589 @@
+{
+    "schemaVersion":  1,
+    "platform":  "bedrock",
+    "source":  {
+                   "kind":  "vanilla-behavior-spawn-events-derived",
+                   "provider":  "Mojang/bedrock-samples",
+                   "url":  "https://api.github.com/repos/Mojang/bedrock-samples/contents/behavior_pack/entities?ref=main",
+                   "fetchedAtUtc":  "2026-10-05T11:10:34.5163989Z"
+               },
+    "notes":  [
+                  "Used by the SPAWN EVENT Library for /summon ... \u003cspawnEvent\u003e.",
+                  "Values are grouped by the entity whose behavior JSON defines the event.",
+                  "Conservative spawn-oriented subset: an event must be defined by the entity and either be a documented built-in spawn initialization event or be explicitly referenced by a vanilla spawn_event property.",
+                  "This is an authoring aid, not a whitelist. /summon uses the EntityEvents argument domain, so Direct Input remains available for any valid/custom event.",
+                  "Minecraft Education support is NOT inferred from this Bedrock snapshot."
+              ],
+    "entities":  [
+                     {
+                         "entity":  "minecraft:allay",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:armadillo",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:arrow",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:axolotl",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:bee",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:blaze",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:boat",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:bogged",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:ranged_mode"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:camel",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:camel_husk",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:cat",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:cave_spider",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:chest_boat",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:chicken",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:command_block_minecart",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:copper_golem",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:cow",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:creaking",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:dolphin",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:donkey",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:drowned",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:ender_dragon",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:ender_pearl",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:enderman",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:evocation_illager",
+                         "events":  [
+                                        "minecraft:spawn_for_raid"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:fishing_hook",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:fox",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:frog",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:glow_squid",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:goat",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:happy_ghast",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:hoglin",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:hopper_minecart",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:horse",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:husk",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:spawn_as_rider"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:llama",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:magma_cube",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:mooshroom",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:mule",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:nautilus",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:ocelot",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:panda",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:parched",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:ranged_mode"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:parrot",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:pig",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:piglin",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:piglin_brute",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:pillager",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:ranged_mode",
+                                        "minecraft:spawn_as_illager_captain",
+                                        "minecraft:spawn_for_raid"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:polar_bear",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:pufferfish",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:rabbit",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:ravager",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:spawn_for_raid"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:salmon",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:sheep",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:shulker",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:silverfish",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:skeleton",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:ranged_mode"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:skeleton_horse",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:slime",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:sniffer",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:spider",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:squid",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:stray",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:ranged_mode"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:strider",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:spawn_baby_strider_jockey"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:sulfur_cube",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:tnt_minecart",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:trader_llama",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:from_wandering_trader"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:tropicalfish",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:turtle",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:villager",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:villager_v2",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:vindicator",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:spawn_as_illager_captain",
+                                        "minecraft:spawn_for_raid"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:warden",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:witch",
+                         "events":  [
+                                        "minecraft:spawn_for_raid"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:wither",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:wither_skeleton",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:wolf",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zoglin",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:spawn_as_rider"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie_horse",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie_nautilus",
+                         "events":  [
+                                        "minecraft:entity_spawned"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie_pigman",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed",
+                                        "minecraft:spawn_as_strider_jockey"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie_villager",
+                         "events":  [
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     },
+                     {
+                         "entity":  "minecraft:zombie_villager_v2",
+                         "events":  [
+                                        "minecraft:entity_born",
+                                        "minecraft:entity_spawned",
+                                        "minecraft:entity_transformed"
+                                    ]
+                     }
+                 ]
+}

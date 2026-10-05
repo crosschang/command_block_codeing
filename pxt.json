@@ -1,6 +1,6 @@
 {
     "name": "command_block_codeing",
-    "version": "0.0.14",
+    "version": "0.0.17",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -9,6 +9,7 @@
     "files": [
         "main.blocks",
         "src/ast/command.ts",
+        "src/ast/raw_command.ts",
         "src/ast/range.ts",
         "src/ast/slot.ts",
         "src/ast/selector.ts",
@@ -18,6 +19,20 @@
         "src/fields/item_components_field.ts",
         "src/fields/range_field.ts",
         "src/fields/selector_field.ts",
+        "src/libraries/item_library.ts",
+        "src/libraries/item_library.generated.ts",
+        "src/libraries/block_library.ts",
+        "src/libraries/block_library.generated.ts",
+        "src/libraries/entity_library.ts",
+        "src/libraries/entity_library.generated.ts",
+        "src/libraries/effect_library.ts",
+        "src/libraries/effect_library.generated.ts",
+        "src/libraries/particle_library.ts",
+        "src/libraries/particle_library.generated.ts",
+        "src/libraries/family_library.ts",
+        "src/libraries/family_library.generated.ts",
+        "src/libraries/entity_event_library.generated.ts",
+        "src/libraries/spawn_event_library.generated.ts",
         "commands/say.ts",
         "commands/mcfunction.ts",
         "commands/give.ts",
@@ -29,7 +44,8 @@
         "function_file.ts",
         "main.ts",
         "README.md",
-        "docs/PROJECT_PLAN.md"
+        "docs/PROJECT_PLAN.md",
+        "docs/REGISTRY.md"
     ],
     "testFiles": [
         "test.ts"

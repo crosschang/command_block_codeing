@@ -22,6 +22,15 @@ namespace Command {
         }
     }
 
+    /** Execute a command line that is not yet represented by a structured block. */
+    //% blockId=command_raw
+    //% block="RAW COMMAND %command"
+    //% command.shadow="text"
+    //% command.defl="camera @s fade time 1 1 1"
+    export function raw(command: string): void {
+        executeCommand(MCFunctionBlocks.createRawCommand(command));
+    }
+
     /** Execute a Minecraft `say` command. */
     //% blockId=command_say
     //% block="SAY %message"
