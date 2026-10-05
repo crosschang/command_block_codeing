@@ -6,7 +6,7 @@
  */
 //% color=#C98900 weight=88 icon="\uf06b" block="ITEM"
 //% groups='["Input", "Components"]'
-namespace Item {
+namespace MCItem {
     //% group="Input"
     //% weight=100
     //% blockId=mcfunction_item_custom_id

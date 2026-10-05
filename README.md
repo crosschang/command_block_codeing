@@ -85,3 +85,8 @@ This build restores the legacy-tested GIVE command path without generated Regist
 - `keep_on_death`
 
 Runtime preview and future Converter export both use the same AST -> Compiler output.
+
+
+## v0.4.1 fix
+
+Renamed the TypeScript namespace `Item` to `MCItem` to avoid a duplicate identifier collision with Minecraft MakeCode core `Item`. Block IDs and the ITEM toolbox category are unchanged.
