@@ -5,6 +5,7 @@
  * Block -> AST -> Compiler -> command string
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
+//% groups='["TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
         let issues = MCFunctionValidator.validateCommand(command);
@@ -24,6 +25,7 @@ namespace Command {
 
     /** Execute a command line that is not yet represented by a structured block. */
     //% blockId=command_raw
+    //% group="RAW COMMAND" weight=10
     //% block="RAW COMMAND %command"
     //% command.shadow="text"
     //% command.defl="camera @s fade time 1 1 1"
@@ -33,6 +35,7 @@ namespace Command {
 
     /** Execute a Minecraft `say` command. */
     //% blockId=command_say
+    //% group="SAY" weight=80
     //% block="SAY %message"
     //% message.shadow="text"
     //% message.defl="Hello World"
@@ -43,6 +46,7 @@ namespace Command {
 
     /** Execute another mcfunction by function ID. */
     //% blockId=command_mcfunction
+    //% group="FUNCTION" weight=70
     //% block="MCFUNCTION %functionId"
     //% functionId.shadow="text"
     //% functionId.defl="sub/test"
@@ -67,6 +71,7 @@ namespace Command {
 
     /** Give an item with data and Bedrock command components. */
     //% blockId=command_give
+    //% group="GIVE" weight=90
     //% block="GIVE target $target item $item amount $amount data $data components $components"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -95,6 +100,7 @@ namespace Command {
 
     /** Teleport a target to a position. */
     //% blockId=mcfunction_tp_position
+    //% group="TELEPORT" weight=100
     //% block="TP target $target to position $destination check blocks $checkForBlocks"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -114,6 +120,7 @@ namespace Command {
 
     /** Teleport a target to another entity. */
     //% blockId=mcfunction_tp_entity
+    //% group="TELEPORT" weight=90
     //% block="TP target $target to entity $destination check blocks $checkForBlocks"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -133,6 +140,7 @@ namespace Command {
 
     /** Teleport a target to a position with yaw/pitch rotation. */
     //% blockId=mcfunction_tp_rotation
+    //% group="TELEPORT" weight=80
     //% block="TP target $target to position $destination rotation $rotation check blocks $checkForBlocks"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -154,6 +162,7 @@ namespace Command {
 
     /** Teleport a target to a position while facing another position. */
     //% blockId=mcfunction_tp_facing_position
+    //% group="TELEPORT" weight=70
     //% block="TP target $target to position $destination facing position $facingPosition check blocks $checkForBlocks"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -175,6 +184,7 @@ namespace Command {
 
     /** Teleport a target to a position while facing an entity. */
     //% blockId=mcfunction_tp_facing_entity
+    //% group="TELEPORT" weight=60
     //% block="TP target $target to position $destination facing entity $facingEntity check blocks $checkForBlocks"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"

@@ -152,3 +152,30 @@ Registry에 없는 값도 Direct Input으로 사용할 수 있습니다.
 
 현재는 Command Blocks와 공통 타입을 먼저 확장합니다.
 `.mcfunction` Parser / Converter UI는 Command Core가 충분히 안정화된 뒤 연결합니다.
+
+## Command Toolbox organization
+
+The `Command` MakeCode category is grouped by Minecraft command so related blocks stay together.
+
+```text
+TELEPORT
+  TP target -> position
+  TP target -> entity
+  TP + rotation
+  TP + facing position
+  TP + facing entity
+
+GIVE
+  GIVE
+
+SAY
+  SAY
+
+FUNCTION
+  MCFUNCTION
+
+RAW COMMAND
+  RAW COMMAND
+```
+
+This is a Toolbox/UI organization only. The AST -> Validator -> Compiler architecture is unchanged.
