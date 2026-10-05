@@ -70,3 +70,18 @@ The proven legacy Selector system is restored without the old generated Registry
 It includes `@a`, `@e`, `@p`, `@r`, `@s`, and Dialogue `@initiator`, plus the existing legacy selector-condition chain (type/tag/name/gamemode/area/range/scores/family/hasitem).
 
 The current Converter design is recorded in `docs/PROJECT_PLAN.md` but implementation is deferred while command blocks are expanded.
+
+## Restored GIVE + Item Components (v0.4.0)
+
+This build restores the legacy-tested GIVE command path without generated Registry libraries.
+
+- `Command.give(target, item, amount)`
+- `Command.giveAdvanced(target, item, amount, data, components)`
+- direct/custom item IDs
+- `can_destroy`
+- `can_place_on`
+- `lock_in_inventory`
+- `lock_in_slot`
+- `keep_on_death`
+
+Runtime preview and future Converter export both use the same AST -> Compiler output.

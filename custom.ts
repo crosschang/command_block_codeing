@@ -53,4 +53,54 @@ namespace Command {
         // in the world's active Behavior Pack.
         executeCommand(command);
     }
+
+    /** Give an item using Selector + direct/custom Item ID. */
+    //% blockId=command_give
+    //% block="GIVE target %target item %item amount %amount"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% item.shadow="mcfunction_item_id_text_shadow"
+    //% amount.defl=1
+    export function give(
+        target: MCFunctionFields.SelectorValue,
+        item: string,
+        amount: number
+    ): void {
+        let itemValue = MCFunctionFields.item(item);
+        let command = MCFunctionBlocks.createGiveCommand(
+            target.selector,
+            itemValue.itemId,
+            amount,
+            0
+        );
+        executeCommand(command);
+    }
+
+    /** Give an item with data and Bedrock command components. */
+    //% blockId=command_give_advanced
+    //% block="GIVE ADVANCED target %target item %item amount %amount data %data components %components"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% item.shadow="mcfunction_item_id_text_shadow"
+    //% amount.defl=1
+    //% data.defl=0
+    //% components.shadow="mcfunction_item_components"
+    export function giveAdvanced(
+        target: MCFunctionFields.SelectorValue,
+        item: string,
+        amount: number,
+        data: number,
+        components: MCFunctionFields.ItemComponentsValue
+    ): void {
+        let itemValue = MCFunctionFields.item(item);
+        let command = MCFunctionBlocks.createGiveCommandWithComponents(
+            target.selector,
+            itemValue.itemId,
+            amount,
+            data,
+            components.components
+        );
+        executeCommand(command);
+    }
+
 }

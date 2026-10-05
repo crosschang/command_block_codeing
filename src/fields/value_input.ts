@@ -46,3 +46,18 @@ namespace MCFunctionFields {
         return itemId;
     }
 }
+
+namespace MCFunctionFields {
+    /** Minimal direct Block ID wrapper; no Registry dependency. */
+    export class BlockValue {
+        blockId: string;
+
+        constructor(blockId: string) {
+            this.blockId = blockId;
+        }
+    }
+
+    export function block(blockId: string): BlockValue {
+        return new BlockValue(blockId);
+    }
+}

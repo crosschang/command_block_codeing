@@ -5,7 +5,8 @@
 namespace MCFunctionAST {
     export enum CommandKind {
         Say = 1,
-        McFunction = 2
+        McFunction = 2,
+        Give = 3
     }
 
     export interface CommandNode {

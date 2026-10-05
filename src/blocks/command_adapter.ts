@@ -7,4 +7,34 @@ namespace MCFunctionBlocks {
     export function createMcFunctionCommand(functionId: string): MCFunctionAST.McFunctionCommand {
         return MCFunctionAST.createMcFunctionCommand(functionId);
     }
+
+    export function createGiveCommand(
+        target: MCFunctionAST.Selector,
+        itemId: string,
+        amount: number,
+        data: number
+    ): MCFunctionAST.GiveCommand {
+        return MCFunctionAST.createGiveCommand(
+            target,
+            MCFunctionAST.createItemStack(itemId, amount, data)
+        );
+    }
+
+    export function createGiveCommandWithComponents(
+        target: MCFunctionAST.Selector,
+        itemId: string,
+        amount: number,
+        data: number,
+        components: MCFunctionAST.ItemCommandComponents
+    ): MCFunctionAST.GiveCommand {
+        return MCFunctionAST.createGiveCommand(
+            target,
+            MCFunctionAST.createItemStackWithComponents(
+                itemId,
+                amount,
+                data,
+                components
+            )
+        );
+    }
 }
