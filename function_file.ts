@@ -31,6 +31,14 @@ namespace FunctionFile {
         // Keep the convenient direct chat preview used for simple function IDs.
         // Nested IDs such as sub/test are invoked reliably through Command.mcFunction().
         player.onChat(name, handler);
+
+        // Runtime Preview guidance only.
+        // Do not export this text to .mcfunction in Converter Edition.
+        // For now, only the main entry prints the instruction so multiple
+        // FunctionFile blocks do not spam the chat during deployment.
+        if (name == "main") {
+            player.say("MCFunction Preview: 채팅에 main 입력하여 테스트");
+        }
     }
 
     /**

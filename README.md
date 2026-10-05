@@ -84,3 +84,15 @@ not redeclare it. Item component UI lives in the unique
 The separate basic GIVE block was removed. The single visible `GIVE` block keeps
 `target`, `item`, `amount`, `data`, and `components`, so the same block covers
 both ordinary give commands and component-enabled give commands.
+
+
+## Runtime Preview 안내 (A: pause 없음)
+
+`FunctionFile.define("main", ...)`가 등록되면 Minecraft 채팅에 다음 안내가 표시됩니다.
+
+```text
+MCFunction Preview: 채팅에 main 입력하여 테스트
+```
+
+이 메시지는 MakeCode 런타임 테스트용이며 Converter의 `.mcfunction` 출력에는 포함하지 않습니다.
+현재 A 테스트 조건이므로 별도의 `loops.pause()`는 넣지 않았습니다.
