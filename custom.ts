@@ -57,7 +57,7 @@ namespace Command {
 
 
     /** Give an item with data and Bedrock command components. */
-    //% blockId=command_give_advanced
+    //% blockId=command_give
     //% block="GIVE target $target item $item amount $amount data $data components $components"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
@@ -65,7 +65,7 @@ namespace Command {
     //% amount.defl=1
     //% data.defl=0
     //% components.shadow="mcfunction_item_components"
-    export function giveAdvanced(
+    export function give(
         target: MCFunctionFields.SelectorValue,
         item: string,
         amount: number,
