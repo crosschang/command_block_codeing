@@ -1,8 +1,13 @@
 /**
  * COMMAND blocks.
  *
- * Runtime preview and Converter export share the same compiler output:
- * Block -> AST -> Compiler -> command string
+ * Canonical export path:
+ * Block -> AST -> Validator -> Compiler -> command string
+ *
+ * Runtime Preview normally executes that compiler output directly. SUMMON
+ * ADVANCED Rotation/Facing is the one compatibility exception: MakeCode
+ * player.execute() rejects those modern overloads, so MCFunctionPreview
+ * emulates only the orientation while the exported command stays unchanged.
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
 //% groups='["SUMMON", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
@@ -187,7 +192,7 @@ namespace Command {
         nameTag?: string,
         spawnPosition?: MCFunctionPositionFields.PositionValue
     ): void {
-        executeCommand(
+        MCFunctionPreview.executeSummon(
             MCFunctionBlocks.createSummonSimpleCommand(
                 entity.entityId,
                 nameTag,
@@ -219,7 +224,7 @@ namespace Command {
         spawnEvent?: string,
         nameTag?: string
     ): void {
-        executeCommand(
+        MCFunctionPreview.executeSummon(
             MCFunctionBlocks.createSummonAdvancedCommand(
                 entity.entityId,
                 spawnPosition.position,

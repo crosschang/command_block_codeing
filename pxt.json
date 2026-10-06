@@ -47,6 +47,7 @@
         "src/blocks/command_adapter.ts",
         "src/compiler/compiler.ts",
         "src/validator/validator.ts",
+        "src/preview/summon_preview.ts",
         "item_components.ts",
         "custom.ts",
         "function_file.ts",
@@ -62,7 +63,9 @@
         "docs/CHANGELOG_0.0.19.md",
         "docs/SUMMON.md",
         "docs/CHANGELOG_0.0.20.md",
-        "docs/CHANGELOG_0.0.21.md"
+        "docs/CHANGELOG_0.0.21.md",
+        "docs/CHANGELOG_SUMMON_PREVIEW_2026-10-06.md",
+        "docs/SUMMON_PREVIEW_TEST.md"
     ],
     "testFiles": [
         "test.ts"

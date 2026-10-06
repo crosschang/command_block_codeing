@@ -184,3 +184,42 @@ Future Parser: " " in this synthetic position → spawnEvent = undefined
 ```
 
 This keeps Minecraft Education execution compatibility without making a fake Spawn Event part of the command meaning.
+
+## 6. MakeCode Runtime Preview compatibility — Orientation emulation
+
+Minecraft Education itself accepts the modern ADVANCED SUMMON Rotation/Facing
+forms, but runtime testing on 2026-10-06 showed that MakeCode
+`player.execute()` rejects those overloads directly.
+
+This does **not** change the AST or `.mcfunction` compiler.
+
+```text
+Export / Converter
+SUMMON AST
+→ Validator
+→ Compiler
+→ modern summon ... rotation/facing ...
+```
+
+Runtime Preview only:
+
+```text
+SUMMON ADVANCED Rotation/Facing
+→ temporarily tag pre-existing same-type entities
+→ summon entity + position + spawnEvent + nameTag without orientation
+→ identify the newly summoned entity at the spawn position
+→ apply orientation with the existing TP AST/Compiler
+→ remove temporary tags
+```
+
+Verified Education/MakeCode behavior used by the adapter:
+
+- `summon villager ~ ~ ~ minecraft:become_farmer "test"` works through `player.execute()`.
+- `summon villager ~ ~ ~ " " "test"` works through `player.execute()`.
+- Direct modern SUMMON Rotation/Facing overloads fail through `player.execute()`.
+- A newly summoned unnamed `armor_stand` can be isolated with temporary tags.
+- TP can then apply Rotation, Facing Position, or Facing Entity in place.
+
+Preview-only temporary tags use the `cbc_p_*` prefix and are removed after each
+emulated summon. The exported `.mcfunction` never contains those tag/TP helper
+commands.

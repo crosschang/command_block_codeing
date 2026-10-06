@@ -124,3 +124,32 @@ FunctionFile.define("test/summon_education_compat", function () {
         "test mp"
     )
 })
+
+// SUMMON runtime preview orientation emulation smoke test.
+// These use armor stands so the result does not wander away like a villager.
+// Invoke the FunctionFile preview manually while testing in Education.
+FunctionFile.define("test/summon_preview_orientation", function () {
+    Command.summonAdvanced(
+        MCFunctionEntityLibrary.armorStand(),
+        MCFunctionPositionFields.relative(3, 0, 0),
+        Command.summonRotation(
+            MCFunctionRotationFields.absolute(90, 0)
+        )
+    )
+
+    Command.summonAdvanced(
+        MCFunctionEntityLibrary.armorStand(),
+        MCFunctionPositionFields.relative(5, 0, 0),
+        Command.summonFacingPositionOption(
+            MCFunctionPositionFields.relative(0, 0, 5)
+        )
+    )
+
+    Command.summonAdvanced(
+        MCFunctionEntityLibrary.armorStand(),
+        MCFunctionPositionFields.relative(7, 0, 0),
+        Command.summonFacingEntityOption(
+            MCFunctionFields.self(MCFunctionFields.noSelectorCondition())
+        )
+    )
+})
