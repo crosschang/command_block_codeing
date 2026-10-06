@@ -17,6 +17,9 @@ namespace MCFunctionCompiler {
             case MCFunctionAST.CommandKind.Teleport:
                 return compileTeleport(<MCFunctionAST.TeleportCommand>command);
 
+            case MCFunctionAST.CommandKind.Summon:
+                return compileSummon(<MCFunctionAST.SummonCommand>command);
+
             default:
                 return "";
         }
@@ -154,6 +157,86 @@ namespace MCFunctionCompiler {
 
         result = result + " " + (command.checkForBlocks ? "true" : "false");
         return result;
+    }
+
+    function appendSummonOptionalTail(
+        result: string,
+        spawnEvent: string,
+        nameTag: string
+    ): string {
+        if (spawnEvent && spawnEvent.length > 0) {
+            result = result + " " + spawnEvent;
+        }
+
+        if (nameTag && nameTag.length > 0) {
+            result = result + " " + quoteCommandString(nameTag);
+        }
+
+        return result;
+    }
+
+    function quoteCommandString(value: string): string {
+        let result = "\"";
+        for (let i = 0; i < value.length; i++) {
+            let ch = value.charAt(i);
+            if (ch == "\\" || ch == "\"") result = result + "\\";
+            result = result + ch;
+        }
+        return result + "\"";
+    }
+
+    function compileSummonOrientation(
+        orientation: MCFunctionAST.SummonOrientation
+    ): string {
+        if (!orientation || orientation.kind == MCFunctionAST.SummonOrientationKind.None) {
+            return "";
+        }
+
+        if (orientation.kind == MCFunctionAST.SummonOrientationKind.Rotation) {
+            return compileRotation(orientation.rotation);
+        }
+
+        if (orientation.kind == MCFunctionAST.SummonOrientationKind.Facing && orientation.facing) {
+            if (orientation.facing.kind == MCFunctionAST.FacingKind.Position) {
+                return "facing " + compilePosition(orientation.facing.position);
+            }
+
+            if (orientation.facing.kind == MCFunctionAST.FacingKind.Entity) {
+                return "facing " + compileSelector(orientation.facing.entitySelector);
+            }
+        }
+
+        return "";
+    }
+
+    function compileSummon(command: MCFunctionAST.SummonCommand): string {
+        let result = "summon " + command.entityId;
+
+        if (command.form == MCFunctionAST.SummonForm.Simple) {
+            // Bedrock simple overload:
+            // summon <entity> <nameTag> [spawnPos]
+            // Name may be empty; a position without a name uses the normal spawnPos overload.
+            if (command.nameTag && command.nameTag.length > 0) {
+                result = result + " " + quoteCommandString(command.nameTag);
+            }
+
+            if (command.spawnPosition) {
+                result = result + " " + compilePosition(command.spawnPosition);
+            }
+
+            return result;
+        }
+
+        if (command.spawnPosition) {
+            result = result + " " + compilePosition(command.spawnPosition);
+        }
+
+        let orientationText = compileSummonOrientation(command.orientation);
+        if (orientationText.length > 0) {
+            result = result + " " + orientationText;
+        }
+
+        return appendSummonOptionalTail(result, command.spawnEvent, command.nameTag);
     }
 
     /** Compile a structured Selector AST into Bedrock/Education selector syntax. */

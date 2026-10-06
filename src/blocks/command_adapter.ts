@@ -41,6 +41,29 @@ namespace MCFunctionBlocks {
     }
 
 
+
+    export function createSummonSimpleCommand(
+        entityId: string,
+        nameTag?: string,
+        spawnPosition?: MCFunctionAST.Position
+    ): MCFunctionAST.SummonCommand {
+        return MCFunctionAST.createSummonSimpleCommand(
+            entityId, nameTag, spawnPosition
+        );
+    }
+
+    export function createSummonAdvancedCommand(
+        entityId: string,
+        spawnPosition: MCFunctionAST.Position,
+        orientation?: MCFunctionAST.SummonOrientation,
+        spawnEvent?: string,
+        nameTag?: string
+    ): MCFunctionAST.SummonCommand {
+        return MCFunctionAST.createSummonAdvancedCommand(
+            entityId, spawnPosition, orientation, spawnEvent, nameTag
+        );
+    }
+
     export function createTeleportToPositionCommand(
         target: MCFunctionAST.Selector,
         destination: MCFunctionAST.Position,

@@ -201,3 +201,17 @@ Toolbox에서는 `mcfunction file`과 `tick.json`이 서로 독립된 최상위 
 반대로 `Command.mcFunction()`을 이용한 자기 호출/간접 순환 호출은 파일 정의 중첩과 다른 개념이므로 금지하지 않습니다. 향후 필요하면 무조건 순환에 WARNING을 제공할 수 있지만 구조 ERROR로 차단하지 않습니다.
 
 Future Converter는 entry 순서를 그대로 보존해 `functions/tick.json`의 `values` 배열로 출력하고, `tickJson()` callback에서 `tickValue()`가 아닌 statement를 발견하면 프로젝트 구조 ERROR로 처리합니다. Runtime Preview는 약 50 ms 주기로 등록된 함수들을 배열 순서대로 실행합니다. 자세한 내용은 `docs/TICK_JSON.md`, `docs/FUNCTION_FILE_STRUCTURE.md`를 참고하세요.
+
+## SUMMON (0.0.20)
+
+SUMMON is compressed into two canonical command blocks while reusing Entity ID, Position, Rotation, Facing, Selector and Spawn Event values through AST -> Validator -> Compiler -> Runtime Preview.
+
+```text
+SUMMON
+├─ SUMMON SIMPLE
+└─ SUMMON ADVANCED
+```
+
+`SUMMON SIMPLE` supports entity plus expandable name/position arguments. `SUMMON ADVANCED` uses an explicit position and expandable orientation / spawn event / name arguments. Orientation is a reporter value: none, rotation, facing position, or facing entity.
+
+Omitted optional values are not normalized into explicit defaults. In particular, `summon villager` and `summon villager ~ ~ ~` remain distinct AST forms for future round-trip conversion. See `docs/SUMMON.md`.

@@ -43,6 +43,16 @@ namespace MCFunctionAST {
         };
     }
 
+    /** Facing entity form used by commands whose syntax has no eyes/feet anchor. */
+    export function createFacingEntityNoAnchor(
+        selector: Selector
+    ): Facing {
+        return {
+            kind: FacingKind.Entity,
+            entitySelector: selector
+        };
+    }
+
     export function entityAnchorToken(
         anchor: EntityAnchor
     ): string {

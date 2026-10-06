@@ -5,7 +5,7 @@
  * Block -> AST -> Compiler -> command string
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
-//% groups='["TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
+//% groups='["SUMMON", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
         if (!FunctionFile.allowCommandExecution()) {
@@ -103,6 +103,131 @@ namespace Command {
             components.components
         );
         executeCommand(command);
+    }
+
+
+    /** Wrapper for SUMMON orientation reporter blocks. */
+    export class SummonOrientationValue {
+        orientation: MCFunctionAST.SummonOrientation;
+
+        constructor(orientation: MCFunctionAST.SummonOrientation) {
+            this.orientation = orientation;
+        }
+    }
+
+    /** No rotation/facing clause for SUMMON ADVANCED. */
+    //% blockId=mcfunction_summon_orientation_none
+    //% group="SUMMON" weight=80
+    //% block="no orientation"
+    export function summonNoOrientation(): SummonOrientationValue {
+        return new SummonOrientationValue(
+            MCFunctionAST.createSummonNoOrientation()
+        );
+    }
+
+    /** Use yaw/pitch rotation for SUMMON ADVANCED. */
+    //% blockId=mcfunction_summon_orientation_rotation
+    //% group="SUMMON" weight=79
+    //% block="rotation $rotation"
+    //% rotation.shadow="mcfunction_rotation_relative"
+    export function summonRotation(
+        rotation: MCFunctionRotationFields.RotationValue
+    ): SummonOrientationValue {
+        return new SummonOrientationValue(
+            MCFunctionAST.createSummonRotationOrientation(rotation.rotation)
+        );
+    }
+
+    /** Face a position for SUMMON ADVANCED. */
+    //% blockId=mcfunction_summon_orientation_facing_position
+    //% group="SUMMON" weight=78
+    //% block="facing position $facingPosition"
+    //% facingPosition.shadow="mcfunction_position_relative"
+    export function summonFacingPositionOption(
+        facingPosition: MCFunctionPositionFields.PositionValue
+    ): SummonOrientationValue {
+        return new SummonOrientationValue(
+            MCFunctionAST.createSummonFacingOrientation(
+                MCFunctionAST.createFacingPosition(facingPosition.position)
+            )
+        );
+    }
+
+    /** Face an entity for SUMMON ADVANCED. */
+    //% blockId=mcfunction_summon_orientation_facing_entity
+    //% group="SUMMON" weight=77
+    //% block="facing entity $facingEntity"
+    //% facingEntity.shadow="mcfunction_selector_self"
+    export function summonFacingEntityOption(
+        facingEntity: MCFunctionFields.SelectorValue
+    ): SummonOrientationValue {
+        return new SummonOrientationValue(
+            MCFunctionAST.createSummonFacingOrientation(
+                MCFunctionAST.createFacingEntityNoAnchor(facingEntity.selector)
+            )
+        );
+    }
+
+    /**
+     * Simple summon form.
+     * Optional arguments expand in Bedrock syntax order: name tag, then position.
+     * Empty name is omitted, so position-only syntax remains possible.
+     */
+    //% blockId=mcfunction_summon_simple
+    //% group="SUMMON" weight=100
+    //% block="SUMMON entity $entity || name $nameTag at $spawnPosition"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% entity.shadow="mcfunction_entity_custom_id"
+    //% nameTag.shadow="text"
+    //% nameTag.defl=""
+    //% spawnPosition.shadow="mcfunction_position_relative"
+    export function summonSimple(
+        entity: MCFunctionFields.EntityValue,
+        nameTag?: string,
+        spawnPosition?: MCFunctionPositionFields.PositionValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createSummonSimpleCommand(
+                entity.entityId,
+                nameTag,
+                spawnPosition ? spawnPosition.position : undefined
+            )
+        );
+    }
+
+    /**
+     * Advanced summon form.
+     * Position is explicit; orientation / spawn event / name tag expand as optional arguments.
+     */
+    //% blockId=mcfunction_summon_advanced
+    //% group="SUMMON" weight=90
+    //% block="SUMMON ADVANCED entity $entity at $spawnPosition || orientation $orientation spawn event $spawnEvent name $nameTag"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% entity.shadow="mcfunction_entity_custom_id"
+    //% spawnPosition.shadow="mcfunction_position_relative"
+    //% orientation.shadow="mcfunction_summon_orientation_none"
+    //% spawnEvent.shadow="text"
+    //% spawnEvent.defl=""
+    //% nameTag.shadow="text"
+    //% nameTag.defl=""
+    export function summonAdvanced(
+        entity: MCFunctionFields.EntityValue,
+        spawnPosition: MCFunctionPositionFields.PositionValue,
+        orientation?: SummonOrientationValue,
+        spawnEvent?: string,
+        nameTag?: string
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createSummonAdvancedCommand(
+                entity.entityId,
+                spawnPosition.position,
+                orientation ? orientation.orientation : MCFunctionAST.createSummonNoOrientation(),
+                spawnEvent,
+                nameTag
+            )
+        );
     }
 
 

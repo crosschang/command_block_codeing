@@ -352,6 +352,158 @@ namespace MCFunctionValidator {
         return issues;
     }
 
+    function hasControlCharacter(value: string): boolean {
+        for (let i = 0; i < value.length; i++) {
+            let code = value.charCodeAt(i);
+            if (code < 32 || code == 127) return true;
+        }
+        return false;
+    }
+
+    function validateSummonOrientation(
+        orientation: MCFunctionAST.SummonOrientation,
+        issues: ValidationIssue[]
+    ): void {
+        if (!orientation || orientation.kind == MCFunctionAST.SummonOrientationKind.None) {
+            return;
+        }
+
+        if (orientation.kind == MCFunctionAST.SummonOrientationKind.Rotation) {
+            if (!orientation.rotation) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "SUMMON_ROTATION_MISSING",
+                    "Summon rotation is missing."
+                );
+            } else {
+                appendIssues(issues, validateRotation(orientation.rotation));
+            }
+            return;
+        }
+
+        if (orientation.kind == MCFunctionAST.SummonOrientationKind.Facing) {
+            if (!orientation.facing) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "SUMMON_FACING_MISSING",
+                    "Summon facing target is missing."
+                );
+                return;
+            }
+
+            if (orientation.facing.kind == MCFunctionAST.FacingKind.Position) {
+                if (!orientation.facing.position) {
+                    addIssue(
+                        issues,
+                        ValidationLevel.Error,
+                        "SUMMON_FACING_POSITION_MISSING",
+                        "Summon facing position is missing."
+                    );
+                } else {
+                    appendIssues(issues, validatePosition(orientation.facing.position));
+                }
+                return;
+            }
+
+            if (orientation.facing.kind == MCFunctionAST.FacingKind.Entity) {
+                if (!orientation.facing.entitySelector) {
+                    addIssue(
+                        issues,
+                        ValidationLevel.Error,
+                        "SUMMON_FACING_ENTITY_MISSING",
+                        "Summon facing entity is missing."
+                    );
+                } else {
+                    appendIssues(issues, validateSelector(orientation.facing.entitySelector));
+                }
+                return;
+            }
+
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_FACING_KIND_INVALID",
+                "Unsupported summon facing kind."
+            );
+            return;
+        }
+
+        addIssue(
+            issues,
+            ValidationLevel.Error,
+            "SUMMON_ORIENTATION_INVALID",
+            "Unsupported summon orientation."
+        );
+    }
+
+    export function validateSummonCommand(
+        command: MCFunctionAST.SummonCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        if (!isSafeIdToken(command.entityId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_ENTITY_ID_INVALID",
+                "Summon entity ID is empty or contains invalid command characters."
+            );
+        }
+
+        if (command.nameTag && hasControlCharacter(command.nameTag)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_NAME_INVALID",
+                "Summon name tag cannot contain control characters."
+            );
+        }
+
+        if (command.form == MCFunctionAST.SummonForm.Simple) {
+            if (command.spawnPosition) {
+                appendIssues(issues, validatePosition(command.spawnPosition));
+            }
+            return issues;
+        }
+
+        if (command.form != MCFunctionAST.SummonForm.Advanced) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_FORM_INVALID",
+                "Unsupported summon form."
+            );
+            return issues;
+        }
+
+        if (!command.spawnPosition) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_POSITION_MISSING",
+                "SUMMON ADVANCED requires a spawn position."
+            );
+        } else {
+            appendIssues(issues, validatePosition(command.spawnPosition));
+        }
+
+        validateSummonOrientation(command.orientation, issues);
+
+        if (command.spawnEvent && command.spawnEvent.length > 0 && !isSafeIdToken(command.spawnEvent)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_EVENT_INVALID",
+                "Summon spawn event contains invalid command characters."
+            );
+        }
+
+        return issues;
+    }
+
+
     export function validateCommand(command: MCFunctionAST.CommandNode): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
@@ -382,6 +534,10 @@ namespace MCFunctionValidator {
 
         if (command.kind == MCFunctionAST.CommandKind.Teleport) {
             appendIssues(issues, validateTeleportCommand(<MCFunctionAST.TeleportCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Summon) {
+            appendIssues(issues, validateSummonCommand(<MCFunctionAST.SummonCommand>command));
         }
 
         return issues;

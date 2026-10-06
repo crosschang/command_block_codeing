@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.19",
+    "version": "0.0.20",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -42,6 +42,7 @@
         "commands/say.ts",
         "commands/mcfunction.ts",
         "commands/give.ts",
+        "commands/summon.ts",
         "commands/teleport.ts",
         "src/blocks/command_adapter.ts",
         "src/compiler/compiler.ts",
@@ -57,7 +58,10 @@
         "docs/FUNCTION_FILE_STRUCTURE.md",
         "docs/TICK_JSON.md",
         "docs/TICK_JSON_CHANGE.md",
-        "docs/CHANGELOG_0.0.18.md"
+        "docs/CHANGELOG_0.0.18.md",
+        "docs/CHANGELOG_0.0.19.md",
+        "docs/SUMMON.md",
+        "docs/CHANGELOG_0.0.20.md"
     ],
     "testFiles": [
         "test.ts"
