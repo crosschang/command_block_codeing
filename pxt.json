@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.20",
+    "version": "0.0.21",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -61,7 +61,8 @@
         "docs/CHANGELOG_0.0.18.md",
         "docs/CHANGELOG_0.0.19.md",
         "docs/SUMMON.md",
-        "docs/CHANGELOG_0.0.20.md"
+        "docs/CHANGELOG_0.0.20.md",
+        "docs/CHANGELOG_0.0.21.md"
     ],
     "testFiles": [
         "test.ts"

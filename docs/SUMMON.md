@@ -1,10 +1,8 @@
-# SUMMON — 0.0.20
+# SUMMON — 0.0.21 Education-verified serialization
 
 ## Goal
 
-Keep the MakeCode toolbox compact while preserving the actual Bedrock / Minecraft Education `/summon` overloads.
-
-The command is exposed as **two command blocks**:
+Keep the MakeCode toolbox compact while preserving the two useful SUMMON forms and the argument order verified in Minecraft Education.
 
 ```text
 SUMMON
@@ -12,17 +10,7 @@ SUMMON
 └─ SUMMON ADVANCED
 ```
 
-Helper reporter blocks are used only for the ADVANCED orientation value:
-
-```text
-orientation
-├─ no orientation
-├─ rotation [Rotation]
-├─ facing position [Position]
-└─ facing entity [Selector]
-```
-
-The command still follows the shared core path:
+The shared core path remains:
 
 ```text
 MakeCode Block
@@ -41,54 +29,26 @@ Canonical API:
 Command.summonSimple(entity, nameTag?, spawnPosition?)
 ```
 
-The MakeCode block uses expandable optional arguments in Bedrock syntax order:
+Semantic order:
 
 ```text
-SUMMON entity [entity]
-  + name [name]
-  + at [position]
+entity → [nameTag] → [position]
 ```
 
-Supported meanings:
+Examples:
 
 ```mcfunction
-summon villager
-summon villager "Bob"
-summon villager "Bob" ~ ~ ~
-summon villager ~ ~ ~
+summon minecraft:armor_stand
+summon minecraft:armor_stand test
+summon minecraft:armor_stand "test mp"
+summon minecraft:armor_stand test ~ ~ ~
+summon minecraft:armor_stand "test mp" ~ ~ ~
+summon minecraft:armor_stand ~ ~ ~
 ```
 
-Important: **omitted position and `~ ~ ~` are not the same AST value.**
+`nameTag` is stored as plain text in the AST. The compiler quotes it so spaces and special command-string characters are preserved.
 
-```text
-spawnPosition = undefined
-```
-
-means the position token was omitted from the source command.
-
-```text
-spawnPosition = relative(0, 0, 0)
-```
-
-means the source command explicitly contained `~ ~ ~`.
-
-This distinction is preserved for future `.mcfunction → AST → Blocks → .mcfunction` round-trip.
-
-For a position without a name, the canonical JavaScript uses an empty name placeholder:
-
-```ts
-Command.summonSimple(
-    MCFunctionEntityLibrary.villager(),
-    "",
-    MCFunctionPositionFields.relative(0, 0, 0)
-)
-```
-
-Compiler result:
-
-```mcfunction
-summon minecraft:villager ~ ~ ~
-```
+Omitted position and explicit `~ ~ ~` remain different AST values for round-trip preservation.
 
 ## 2. SUMMON ADVANCED
 
@@ -104,127 +64,94 @@ Command.summonAdvanced(
 )
 ```
 
-The position is explicit. Additional values are expandable:
+Semantic order:
 
 ```text
-SUMMON ADVANCED
-entity [entity]
-at [position]
-  + orientation [orientation]
-  + spawn event [event]
-  + name [name]
+entity
+→ position
+→ orientation
+→ [spawnEvent]
+→ [nameTag]
 ```
 
-### No orientation
+Orientation reuses shared types:
 
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.villager(),
-    MCFunctionPositionFields.relative(0, 0, 0)
-)
+```text
+no orientation
+rotation [Rotation]
+facing position [Position]
+facing entity [Selector]
 ```
+
+Examples:
 
 ```mcfunction
 summon minecraft:villager ~ ~ ~
-```
-
-### Rotation
-
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.villager(),
-    MCFunctionPositionFields.relative(0, 0, 0),
-    Command.summonRotation(
-        MCFunctionRotationFields.relative(0, 0)
-    )
-)
-```
-
-```mcfunction
 summon minecraft:villager ~ ~ ~ ~ ~
+summon minecraft:armor_stand ~ ~ ~ facing @s
+summon minecraft:armor_stand ~ ~ ~ facing ~ ~ ~
 ```
 
-### Facing entity
+### Spawn event + name tag
 
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.villager(),
-    MCFunctionPositionFields.relative(0, 0, 0),
-    Command.summonFacingEntityOption(
-        MCFunctionFields.self(
-            MCFunctionFields.noSelectorCondition()
-        )
-    )
-)
-```
+When both are present they are emitted in that order:
 
 ```mcfunction
-summon minecraft:villager ~ ~ ~ facing @s
+summon minecraft:armor_stand ~ ~ ~ facing @s minecraft:some_event "test mp"
 ```
 
-### Facing position
+Registry values and Direct/Custom input remain allowed for spawn events. Registry membership is not a whitelist.
 
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.villager(),
-    MCFunctionPositionFields.relative(0, 0, 0),
-    Command.summonFacingPositionOption(
-        MCFunctionPositionFields.relative(0, 0, 0)
-    )
-)
-```
+### Name tag without spawn event — Education compatibility rule
 
-```mcfunction
-summon minecraft:villager ~ ~ ~ facing ~ ~ ~
-```
-
-### Spawn event
-
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.villager(),
-    MCFunctionPositionFields.relative(0, 2, 0),
-    Command.summonNoOrientation(),
-    MCFunctionSpawnEventLibrary.custom("minecraft:spawn_farmer")
-)
-```
-
-```mcfunction
-summon minecraft:villager ~ ~2 ~ minecraft:spawn_farmer
-```
-
-### Name without spawn event
-
-```ts
-Command.summonAdvanced(
-    MCFunctionEntityLibrary.ironGolem(),
-    MCFunctionPositionFields.relative(0, 0, 0),
-    Command.summonNoOrientation(),
-    "",
-    "Iron Guardian"
-)
-```
-
-```mcfunction
-summon minecraft:iron_golem ~ ~ ~ "Iron Guardian"
-```
-
-## Shared types reused
-
-SUMMON does not create command-specific copies of shared value types.
+Minecraft Education testing on 2026-10-06 showed that the nameTag occupies the argument after spawnEvent in ADVANCED forms. If a nameTag exists while spawnEvent is omitted, the compiler emits a quoted single-space token as a **synthetic compatibility placeholder**:
 
 ```text
-Entity ID    → MCFunctionEntityLibrary
-Position     → MCFunctionPositionFields
-Rotation     → MCFunctionRotationFields
-Facing       → shared MCFunctionAST.Facing
-Selector     → MCFunctionFields.SelectorValue
-Spawn Event  → MCFunctionSpawnEventLibrary or direct text/custom input
+AST:
+spawnEvent = undefined
+nameTag = "test"
 ```
 
-`Facing Entity` does **not** use `eyes/feet`. The shared `Facing` AST is reused with no anchor for SUMMON. `EntityAnchor` remains available for commands such as modern `execute` where the syntax actually supports it.
+Facing Entity compiler result:
 
-## AST model
+```mcfunction
+summon minecraft:armor_stand ~ ~ ~ facing @s " " "test"
+```
+
+Rotation compiler result:
+
+```mcfunction
+summon minecraft:iron_golem ~ ~ ~ ~ ~ " " "Iron Guardian"
+```
+
+Important:
+
+- `" "` is **not stored as the Spawn Event AST value**.
+- It is emitted only by the compiler when a missing spawnEvent slot must be crossed to reach nameTag.
+- Future `.mcfunction` Parser support should recognize this compiler-generated placeholder and restore `spawnEvent = undefined`.
+- A user-entered spawn event containing whitespace is not treated as this placeholder; normal spawn-event validation still applies.
+
+## 3. Education observations used for this rule
+
+The following behavior was verified directly in Minecraft Education:
+
+```text
+... facing @s IronGuardian
+→ IronGuardian occupies spawnEvent; no name tag is displayed.
+
+... facing @s IronGuardian test
+→ IronGuardian = spawnEvent, test = nameTag.
+
+... facing @s "IronGuardian" "test mp"
+→ quoted spawnEvent token + spaced nameTag works.
+
+... facing @s " " test
+→ empty-event compatibility placeholder allows test to occupy nameTag.
+```
+
+For SIMPLE, the separate name-first overload remains independent of spawnEvent.
+
+## 4. AST model
 
 ```ts
 SummonCommand {
@@ -245,22 +172,15 @@ SummonOrientation {
 }
 ```
 
-The compiler emits only values that are actually present in the AST.
+## 5. Round-trip policy
 
-## Round-trip rule
+The AST stores semantic values, not compiler compatibility tokens.
 
-Do not normalize omitted optional syntax into explicit default tokens.
-
-Examples:
-
-```mcfunction
-summon villager
+```text
+spawnEvent omitted + nameTag present
+AST: spawnEvent = undefined
+Compiler: inserts " "
+Future Parser: " " in this synthetic position → spawnEvent = undefined
 ```
 
-must not automatically become:
-
-```mcfunction
-summon villager ~ ~ ~
-```
-
-Likewise, orientation/event/name values are omitted unless represented by the AST.
+This keeps Minecraft Education execution compatibility without making a fake Spawn Event part of the command meaning.

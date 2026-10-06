@@ -159,16 +159,32 @@ namespace MCFunctionCompiler {
         return result;
     }
 
+    /**
+     * Compile the optional ADVANCED SUMMON tail.
+     *
+     * Education runtime verification (2026-10-06) showed that when a
+     * nameTag is present without an explicit spawnEvent, the parser still
+     * needs one argument occupying the spawnEvent slot.  We emit a quoted
+     * single-space token (" ") only at compile time for that compatibility
+     * case.  The AST continues to store spawnEvent as undefined/empty so
+     * command meaning is not polluted by a synthetic event ID.
+     */
     function appendSummonOptionalTail(
         result: string,
         spawnEvent: string,
         nameTag: string
     ): string {
-        if (spawnEvent && spawnEvent.length > 0) {
+        let hasSpawnEvent = !!spawnEvent && spawnEvent.length > 0;
+        let hasNameTag = !!nameTag && nameTag.length > 0;
+
+        if (hasSpawnEvent) {
             result = result + " " + spawnEvent;
+        } else if (hasNameTag) {
+            // Education compatibility placeholder for the omitted spawnEvent.
+            result = result + " \" \"";
         }
 
-        if (nameTag && nameTag.length > 0) {
+        if (hasNameTag) {
             result = result + " " + quoteCommandString(nameTag);
         }
 

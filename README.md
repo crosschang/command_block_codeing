@@ -54,6 +54,7 @@ FunctionFile.define("main", function () {
 - `GIVE`
 - `RAW COMMAND`
 - `TP` / `TELEPORT` (position / entity / rotation / facing position / facing entity)
+- `SUMMON` (SIMPLE / ADVANCED, Education-verified optional-slot serialization)
 
 `RAW COMMAND`는 아직 구조화 블록으로 지원하지 않는 명령을 원문 그대로 AST에 보존하고 실행하기 위한 escape hatch입니다.
 
@@ -215,3 +216,15 @@ SUMMON
 `SUMMON SIMPLE` supports entity plus expandable name/position arguments. `SUMMON ADVANCED` uses an explicit position and expandable orientation / spawn event / name arguments. Orientation is a reporter value: none, rotation, facing position, or facing entity.
 
 Omitted optional values are not normalized into explicit defaults. In particular, `summon villager` and `summon villager ~ ~ ~` remain distinct AST forms for future round-trip conversion. See `docs/SUMMON.md`.
+
+
+## SUMMON Education compatibility
+
+SUMMON uses two canonical blocks:
+
+```text
+SIMPLE   : entity → [nameTag] → [position]
+ADVANCED : entity → position → orientation → [spawnEvent] → [nameTag]
+```
+
+For ADVANCED only, if `nameTag` exists while `spawnEvent` is omitted, the compiler inserts a quoted single-space token (`" "`) into the spawnEvent slot. The AST still stores the event as omitted. See `docs/SUMMON.md`.

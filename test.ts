@@ -46,7 +46,7 @@ FunctionFile.define("test/summon_simple", function () {
     )
 })
 
-// SUMMON ADVANCED: none / rotation / facing position / facing entity / event / name.
+// SUMMON ADVANCED: none / rotation / facing position / facing entity / event / Education name placeholder.
 FunctionFile.define("test/summon_advanced", function () {
     Command.summonAdvanced(
         MCFunctionEntityLibrary.villager(),
@@ -90,5 +90,37 @@ FunctionFile.define("test/summon_advanced", function () {
         Command.summonNoOrientation(),
         "",
         "Iron Guardian"
+    )
+})
+
+
+FunctionFile.define("test/summon_education_compat", function () {
+    // SIMPLE: spaced name uses the name-first overload.
+    Command.summonSimple(
+        MCFunctionEntityLibrary.armorStand(),
+        "test mp",
+        MCFunctionPositionFields.relative(0, 0, 0)
+    )
+
+    // ADVANCED: no spawn event + name tag. Compiler emits " " in the event slot.
+    Command.summonAdvanced(
+        MCFunctionEntityLibrary.armorStand(),
+        MCFunctionPositionFields.relative(0, 0, 0),
+        Command.summonFacingEntityOption(
+            MCFunctionFields.self(MCFunctionFields.noSelectorCondition())
+        ),
+        "",
+        "test mp"
+    )
+
+    // Explicit event + name tag: no synthetic placeholder is needed.
+    Command.summonAdvanced(
+        MCFunctionEntityLibrary.armorStand(),
+        MCFunctionPositionFields.relative(0, 0, 0),
+        Command.summonFacingEntityOption(
+            MCFunctionFields.self(MCFunctionFields.noSelectorCondition())
+        ),
+        MCFunctionSpawnEventLibrary.custom("minecraft:entity_spawned"),
+        "test mp"
     )
 })
