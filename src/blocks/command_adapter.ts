@@ -64,6 +64,28 @@ namespace MCFunctionBlocks {
         );
     }
 
+    /** Unified EFFECT Block Adapter -> AST path. */
+    export function createEffectCommand(
+        target: MCFunctionAST.Selector,
+        mode: MCFunctionAST.EffectMode,
+        effectId?: string,
+        durationMode?: MCFunctionAST.EffectDurationMode,
+        seconds?: number,
+        amplifier?: number,
+        hideParticles?: boolean
+    ): MCFunctionAST.EffectCommand {
+        return MCFunctionAST.createEffectCommand(
+            target,
+            mode,
+            effectId,
+            durationMode,
+            seconds,
+            amplifier,
+            hideParticles
+        );
+    }
+
+    /** Legacy adapter helper retained for internal/source compatibility. */
     export function createEffectAddCommand(
         target: MCFunctionAST.Selector,
         effectId: string,
@@ -76,6 +98,7 @@ namespace MCFunctionBlocks {
         );
     }
 
+    /** Legacy adapter helper retained for internal/source compatibility. */
     export function createEffectInfiniteCommand(
         target: MCFunctionAST.Selector,
         effectId: string,
@@ -87,18 +110,21 @@ namespace MCFunctionBlocks {
         );
     }
 
+    /** Legacy adapter helper retained for internal/source compatibility. */
     export function createEffectClearAllCommand(
         target: MCFunctionAST.Selector
     ): MCFunctionAST.EffectCommand {
         return MCFunctionAST.createEffectClearAllCommand(target);
     }
 
+    /** Legacy adapter helper retained for internal/source compatibility. */
     export function createEffectClearSpecificCommand(
         target: MCFunctionAST.Selector,
         effectId: string
     ): MCFunctionAST.EffectCommand {
         return MCFunctionAST.createEffectClearSpecificCommand(target, effectId);
     }
+
 
     export function createTeleportToPositionCommand(
         target: MCFunctionAST.Selector,

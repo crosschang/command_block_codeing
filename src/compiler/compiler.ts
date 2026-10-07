@@ -67,20 +67,32 @@ namespace MCFunctionCompiler {
             return result + "clear " + command.effectId;
         }
 
-        let duration = "";
-        if (command.durationMode == MCFunctionAST.EffectDurationMode.Infinite) {
-            duration = "infinite";
-        } else {
-            // Undefined durationMode is treated as Seconds for compatibility
-            // with EffectCommand values created before infinite support existed.
-            duration = "" + command.seconds;
+        result = result + command.effectId;
+
+        // Bedrock syntax makes the add tail positional and optional.
+        // No duration token means Minecraft's default duration is used.
+        if (command.durationMode == undefined) {
+            return result;
         }
 
-        return result + command.effectId +
-            " " + duration +
-            " " + command.amplifier +
-            " " + (command.hideParticles ? "true" : "false");
+        if (command.durationMode == MCFunctionAST.EffectDurationMode.Infinite) {
+            result = result + " infinite";
+        } else {
+            result = result + " " + command.seconds;
+        }
+
+        if (command.amplifier == undefined) {
+            return result;
+        }
+        result = result + " " + command.amplifier;
+
+        if (command.hideParticles == undefined) {
+            return result;
+        }
+
+        return result + " " + (command.hideParticles ? "true" : "false");
     }
+
 
     function compileItemCommandComponents(
         components: MCFunctionAST.ItemCommandComponents

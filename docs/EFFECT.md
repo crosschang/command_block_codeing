@@ -1,31 +1,120 @@
-# EFFECT — structured command support
+# EFFECT — unified structured command block
 
-## Scope
+## Decision
 
-Minecraft Education 26.32 runtime verification now covers both numeric and infinite duration forms:
+EFFECT is exposed as **one command block**.
 
-```mcfunction
-effect <target> <effect> <seconds> <amplifier> <hideParticles>
-effect <target> <effect> infinite <amplifier> <hideParticles>
-effect <target> clear
-effect <target> clear <effect>
-```
+The UI follows the same expansion idea used by SUMMON:
 
-Runtime Preview is `DIRECT`: the AST is compiled to real command syntax and passed to `player.execute()`.
+- required values are visible,
+- optional positional values are added/removed with MakeCode `+ / -`,
+- mutually exclusive meanings use reporter variants instead of separate command blocks.
 
-`infinite` was verified through `player.execute()` in Education 26.32. The active-effect screen opened with `Z` displayed the infinity symbol `∞` for the applied effect.
+This keeps the Minecraft command concept visible as one `effect` command while the AST remains the Source of Truth.
 
-## Blocks
+## MakeCode block shape
+
+Canonical command block:
 
 ```text
-EFFECT target ... effect ... seconds ... amplifier ... hide particles ...
-EFFECT INFINITE target ... effect ... amplifier ... hide particles ...
-EFFECT CLEAR ALL target ...
-EFFECT CLEAR target ... effect ...
+EFFECT
+  target  @s
+  action  [apply effect speed]
+  + duration
+  + amplifier
+  + hide particles
 ```
 
-Effect values reuse `MCFunctionEffectLibrary`, including Registry reporters and Direct Input.
-Registry membership is not treated as a whitelist.
+The optional add tail expands in Bedrock syntax order:
+
+```text
+duration → amplifier → hide particles
+```
+
+### Apply reporter
+
+```text
+[apply effect speed]
+```
+
+Effect IDs reuse `MCFunctionEffectLibrary` Registry reporters and Direct Input.
+
+### Clear reporter
+
+Default:
+
+```text
+[clear] [+]
+```
+
+means:
+
+```mcfunction
+effect @s clear
+```
+
+Press `+` on the CLEAR reporter:
+
+```text
+[clear effect speed] [-]
+```
+
+means:
+
+```mcfunction
+effect @s clear speed
+```
+
+### Duration reporters
+
+Numeric:
+
+```text
+[duration 30 seconds]
+```
+
+Infinite:
+
+```text
+[duration infinite]
+```
+
+`infinite` was verified through `player.execute()` in Minecraft Education 26.32. The active-effect screen opened with `Z` displayed `∞`.
+
+## Canonical TypeScript API
+
+```ts
+Command.effect(
+    target,
+    Command.effectApply(effect)
+)
+
+Command.effect(
+    target,
+    Command.effectApply(effect),
+    Command.effectSeconds(10),
+    1,
+    false
+)
+
+Command.effect(
+    target,
+    Command.effectApply(effect),
+    Command.effectInfinite(),
+    1,
+    false
+)
+
+Command.effect(
+    target,
+    Command.effectClear(effect)
+)
+
+Command.effect(
+    target,
+    Command.effectClear()
+)
+```
 
 ## AST
 
@@ -41,26 +130,41 @@ EffectCommand {
 }
 ```
 
-Timed and infinite effects share the same `EffectCommand` AST. `durationMode` describes how the duration token is compiled.
+The UI reporter classes are Block Adapter values only. They do not replace the Minecraft Command AST.
 
-## Compiler examples
+## Compiler forms
+
+The compiler can serialize the real positional syntax:
 
 ```mcfunction
-effect @s speed 30 0 false
+effect @s speed
+effect @s speed 10
+effect @s speed 10 1
+effect @s speed 10 1 false
+effect @s speed infinite
+effect @s speed infinite 1
 effect @s speed infinite 1 false
-effect @a clear
+effect @s clear
 effect @s clear speed
 ```
+
+Timed, infinite, clear-specific, and clear-all paths are DIRECT Preview paths. The minimal add form with omitted duration should be runtime-checked in Education after this UI refactor before adding a separate empirical PASS note for that exact variant.
 
 ## Validation
 
 - Selector uses the shared Selector validator.
 - Effect ID accepts Registry or custom-safe tokens.
-- Timed duration must be an integer.
-- Infinite duration does not use a numeric `seconds` value.
-- Amplifier must be an integer.
+- Clear All rejects add-tail values.
+- Clear Specific rejects duration/amplifier/hideParticles.
+- Seconds duration requires an integer seconds value.
+- Infinite duration must not contain seconds.
+- Amplifier, when present, must be an integer.
+- `hideParticles` cannot appear unless amplifier is also present.
+- Amplifier/hideParticles cannot appear unless duration is present.
 
 ## Preview compatibility
+
+Already verified in Minecraft Education 26.32:
 
 ```text
 effect timed          DIRECT PASS

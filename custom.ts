@@ -236,87 +236,135 @@ namespace Command {
     }
 
 
-    /** Apply a status effect for a numeric duration in seconds. */
-    //% blockId=mcfunction_effect_add
+    /** Wrapper for the EFFECT action reporter blocks. */
+    export class EffectActionValue {
+        mode: MCFunctionAST.EffectMode;
+        effectId?: string;
+
+        constructor(mode: MCFunctionAST.EffectMode, effectId?: string) {
+            this.mode = mode;
+            this.effectId = effectId;
+        }
+    }
+
+    /** Wrapper for EFFECT duration reporter blocks. */
+    export class EffectDurationValue {
+        mode: MCFunctionAST.EffectDurationMode;
+        seconds?: number;
+
+        constructor(mode: MCFunctionAST.EffectDurationMode, seconds?: number) {
+            this.mode = mode;
+            this.seconds = seconds;
+        }
+    }
+
+    /** Apply one status effect. Minecraft uses 30 seconds when duration is omitted. */
+    //% blockId=mcfunction_effect_action_apply
+    //% group="EFFECT" weight=99
+    //% block="apply effect $effect"
+    //% effect.shadow="mcfunction_effect_registry_speed"
+    export function effectApply(
+        effect: MCFunctionFields.EffectValue
+    ): EffectActionValue {
+        return new EffectActionValue(
+            MCFunctionAST.EffectMode.Add,
+            effect.effectId
+        );
+    }
+
+    /**
+     * Clear status effects. With no optional effect this means clear all;
+     * press + to add one effect and clear only that effect.
+     */
+    //% blockId=mcfunction_effect_action_clear
+    //% group="EFFECT" weight=98
+    //% block="clear || effect $effect"
+    //% expandableArgumentMode="enabled"
+    //% effect.shadow="mcfunction_effect_registry_speed"
+    export function effectClear(
+        effect?: MCFunctionFields.EffectValue
+    ): EffectActionValue {
+        if (effect) {
+            return new EffectActionValue(
+                MCFunctionAST.EffectMode.ClearSpecific,
+                effect.effectId
+            );
+        }
+
+        return new EffectActionValue(MCFunctionAST.EffectMode.ClearAll);
+    }
+
+    /** Numeric EFFECT duration reporter. */
+    //% blockId=mcfunction_effect_duration_seconds
+    //% group="EFFECT" weight=97
+    //% block="duration $seconds seconds"
+    //% seconds.defl=30
+    export function effectSeconds(seconds: number): EffectDurationValue {
+        return new EffectDurationValue(
+            MCFunctionAST.EffectDurationMode.Seconds,
+            seconds
+        );
+    }
+
+    /** Infinite EFFECT duration reporter. */
+    //% blockId=mcfunction_effect_duration_infinite
+    //% group="EFFECT" weight=96
+    //% block="duration infinite"
+    export function effectInfinite(): EffectDurationValue {
+        return new EffectDurationValue(
+            MCFunctionAST.EffectDurationMode.Infinite
+        );
+    }
+
+    /**
+     * Unified EFFECT command block.
+     *
+     * Required:
+     * - target
+     * - action (apply effect / clear)
+     *
+     * Optional add tail expands in real Bedrock syntax order:
+     * - duration
+     * - amplifier
+     * - hide particles
+     *
+     * CLEAR owns its optional effect inside the clear reporter so the command
+     * block itself remains one canonical EFFECT block.
+     */
+    //% blockId=mcfunction_effect
     //% group="EFFECT" weight=100
-    //% block="EFFECT target $target effect $effect seconds $seconds amplifier $amplifier hide particles $hideParticles"
+    //% block="EFFECT target $target action $action || $duration amplifier $amplifier hide particles $hideParticles"
+    //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
-    //% effect.shadow="mcfunction_effect_registry_speed"
-    //% seconds.defl=30
+    //% action.shadow="mcfunction_effect_action_apply"
+    //% duration.shadow="mcfunction_effect_duration_seconds"
     //% amplifier.defl=0
     //% hideParticles.defl=false
     export function effect(
         target: MCFunctionFields.SelectorValue,
-        effect: MCFunctionFields.EffectValue,
-        seconds: number,
-        amplifier: number,
-        hideParticles: boolean
+        action: EffectActionValue,
+        duration?: EffectDurationValue,
+        amplifier?: number,
+        hideParticles?: boolean
     ): void {
+        let durationMode: MCFunctionAST.EffectDurationMode = undefined;
+        let seconds: number = undefined;
+
+        if (duration) {
+            durationMode = duration.mode;
+            seconds = duration.seconds;
+        }
+
         executeCommand(
-            MCFunctionBlocks.createEffectAddCommand(
+            MCFunctionBlocks.createEffectCommand(
                 target.selector,
-                effect.effectId,
+                action.mode,
+                action.effectId,
+                durationMode,
                 seconds,
                 amplifier,
                 hideParticles
-            )
-        );
-    }
-
-    /** Apply a status effect with infinite duration. */
-    //% blockId=mcfunction_effect_infinite
-    //% group="EFFECT" weight=95
-    //% block="EFFECT INFINITE target $target effect $effect amplifier $amplifier hide particles $hideParticles"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% effect.shadow="mcfunction_effect_registry_speed"
-    //% amplifier.defl=0
-    //% hideParticles.defl=false
-    export function effectInfinite(
-        target: MCFunctionFields.SelectorValue,
-        effect: MCFunctionFields.EffectValue,
-        amplifier: number,
-        hideParticles: boolean
-    ): void {
-        executeCommand(
-            MCFunctionBlocks.createEffectInfiniteCommand(
-                target.selector,
-                effect.effectId,
-                amplifier,
-                hideParticles
-            )
-        );
-    }
-
-    /** Clear every status effect from a target. */
-    //% blockId=mcfunction_effect_clear_all
-    //% group="EFFECT" weight=90
-    //% block="EFFECT CLEAR ALL target $target"
-    //% target.shadow="mcfunction_selector_self"
-    export function effectClearAll(
-        target: MCFunctionFields.SelectorValue
-    ): void {
-        executeCommand(
-            MCFunctionBlocks.createEffectClearAllCommand(target.selector)
-        );
-    }
-
-    /** Clear one specific status effect from a target. */
-    //% blockId=mcfunction_effect_clear_specific
-    //% group="EFFECT" weight=80
-    //% block="EFFECT CLEAR target $target effect $effect"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% effect.shadow="mcfunction_effect_registry_speed"
-    export function effectClear(
-        target: MCFunctionFields.SelectorValue,
-        effect: MCFunctionFields.EffectValue
-    ): void {
-        executeCommand(
-            MCFunctionBlocks.createEffectClearSpecificCommand(
-                target.selector,
-                effect.effectId
             )
         );
     }

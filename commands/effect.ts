@@ -1,14 +1,16 @@
 /**
  * effect command AST.
  *
- * Verified Minecraft Education 26.32 forms:
- * - timed add: effect <target> <effect> <seconds> <amplifier> <hideParticles>
- * - infinite add: effect <target> <effect> infinite <amplifier> <hideParticles>
+ * Canonical Bedrock / Education forms:
+ * - add: effect <target> <effect> [seconds] [amplifier] [hideParticles]
+ * - infinite add: effect <target> <effect> infinite [amplifier] [hideParticles]
  * - clear all: effect <target> clear
- * - clear one: effect <target> clear <effect>
+ * - clear one: effect <target> clear [effect]
  *
- * Both timed and infinite forms are DIRECT Preview paths: the AST is compiled
- * to real Bedrock/Education command syntax and executed with player.execute().
+ * UI note:
+ * The MakeCode surface exposes one EFFECT command block. Apply/Clear and
+ * Seconds/Infinite are reporter values; optional tail arguments expand with
+ * MakeCode's + / - control. AST meaning stays independent from that UI.
  */
 namespace MCFunctionAST {
     export enum EffectMode {
@@ -33,7 +35,33 @@ namespace MCFunctionAST {
         hideParticles?: boolean;
     }
 
-    /** Create a timed status-effect command. */
+    /**
+     * Generic EFFECT AST constructor used by the unified MakeCode block.
+     * Optional values are preserved so Validator can reject invalid
+     * combinations instead of the Block Adapter silently discarding them.
+     */
+    export function createEffectCommand(
+        target: Selector,
+        mode: EffectMode,
+        effectId?: string,
+        durationMode?: EffectDurationMode,
+        seconds?: number,
+        amplifier?: number,
+        hideParticles?: boolean
+    ): EffectCommand {
+        return {
+            kind: CommandKind.Effect,
+            mode: mode,
+            target: target,
+            effectId: effectId,
+            durationMode: durationMode,
+            seconds: seconds,
+            amplifier: amplifier,
+            hideParticles: hideParticles
+        };
+    }
+
+    /** Backward-compatible AST helper for a timed status effect. */
     export function createEffectAddCommand(
         target: Selector,
         effectId: string,
@@ -41,55 +69,49 @@ namespace MCFunctionAST {
         amplifier: number,
         hideParticles: boolean
     ): EffectCommand {
-        return {
-            kind: CommandKind.Effect,
-            mode: EffectMode.Add,
-            target: target,
-            effectId: effectId,
-            durationMode: EffectDurationMode.Seconds,
-            seconds: seconds,
-            amplifier: amplifier,
-            hideParticles: hideParticles
-        };
+        return createEffectCommand(
+            target,
+            EffectMode.Add,
+            effectId,
+            EffectDurationMode.Seconds,
+            seconds,
+            amplifier,
+            hideParticles
+        );
     }
 
-    /** Create an infinite-duration status-effect command. */
+    /** Backward-compatible AST helper for an infinite status effect. */
     export function createEffectInfiniteCommand(
         target: Selector,
         effectId: string,
         amplifier: number,
         hideParticles: boolean
     ): EffectCommand {
-        return {
-            kind: CommandKind.Effect,
-            mode: EffectMode.Add,
-            target: target,
-            effectId: effectId,
-            durationMode: EffectDurationMode.Infinite,
-            amplifier: amplifier,
-            hideParticles: hideParticles
-        };
+        return createEffectCommand(
+            target,
+            EffectMode.Add,
+            effectId,
+            EffectDurationMode.Infinite,
+            undefined,
+            amplifier,
+            hideParticles
+        );
     }
 
     export function createEffectClearAllCommand(
         target: Selector
     ): EffectCommand {
-        return {
-            kind: CommandKind.Effect,
-            mode: EffectMode.ClearAll,
-            target: target
-        };
+        return createEffectCommand(target, EffectMode.ClearAll);
     }
 
     export function createEffectClearSpecificCommand(
         target: Selector,
         effectId: string
     ): EffectCommand {
-        return {
-            kind: CommandKind.Effect,
-            mode: EffectMode.ClearSpecific,
-            target: target,
-            effectId: effectId
-        };
+        return createEffectCommand(
+            target,
+            EffectMode.ClearSpecific,
+            effectId
+        );
     }
 }

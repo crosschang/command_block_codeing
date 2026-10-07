@@ -311,12 +311,9 @@ namespace MCFunctionValidator {
 
         appendIssues(issues, validateSelector(command.target));
 
-        if (command.mode == MCFunctionAST.EffectMode.ClearAll) {
-            return issues;
-        }
-
         if (
             command.mode != MCFunctionAST.EffectMode.Add &&
+            command.mode != MCFunctionAST.EffectMode.ClearAll &&
             command.mode != MCFunctionAST.EffectMode.ClearSpecific
         ) {
             addIssue(
@@ -325,6 +322,24 @@ namespace MCFunctionValidator {
                 "EFFECT_MODE_INVALID",
                 "Unsupported effect command mode."
             );
+            return issues;
+        }
+
+        if (command.mode == MCFunctionAST.EffectMode.ClearAll) {
+            if (
+                command.effectId != undefined ||
+                command.durationMode != undefined ||
+                command.seconds != undefined ||
+                command.amplifier != undefined ||
+                command.hideParticles != undefined
+            ) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "EFFECT_CLEAR_ALL_HAS_OPTIONS",
+                    "Clear all does not accept an effect add tail."
+                );
+            }
             return issues;
         }
 
@@ -338,11 +353,40 @@ namespace MCFunctionValidator {
         }
 
         if (command.mode == MCFunctionAST.EffectMode.ClearSpecific) {
+            if (
+                command.durationMode != undefined ||
+                command.seconds != undefined ||
+                command.amplifier != undefined ||
+                command.hideParticles != undefined
+            ) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "EFFECT_CLEAR_SPECIFIC_HAS_OPTIONS",
+                    "Clearing a specific effect does not accept duration, amplifier, or particle options."
+                );
+            }
+            return issues;
+        }
+
+        // ADD: duration/amplifier/hideParticles are positional optional values.
+        if (command.durationMode == undefined) {
+            if (
+                command.seconds != undefined ||
+                command.amplifier != undefined ||
+                command.hideParticles != undefined
+            ) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "EFFECT_DURATION_REQUIRED_FOR_TAIL",
+                    "Effect duration must be present before amplifier or particle options."
+                );
+            }
             return issues;
         }
 
         if (
-            command.durationMode != undefined &&
             command.durationMode != MCFunctionAST.EffectDurationMode.Seconds &&
             command.durationMode != MCFunctionAST.EffectDurationMode.Infinite
         ) {
@@ -352,9 +396,10 @@ namespace MCFunctionValidator {
                 "EFFECT_DURATION_MODE_INVALID",
                 "Unsupported effect duration mode."
             );
+            return issues;
         }
 
-        if (command.durationMode != MCFunctionAST.EffectDurationMode.Infinite) {
+        if (command.durationMode == MCFunctionAST.EffectDurationMode.Seconds) {
             if (!isIntegerValue(command.seconds)) {
                 addIssue(
                     issues,
@@ -363,9 +408,16 @@ namespace MCFunctionValidator {
                     "Effect seconds must be an integer."
                 );
             }
+        } else if (command.seconds != undefined) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_INFINITE_HAS_SECONDS",
+                "Infinite duration must not also contain a seconds value."
+            );
         }
 
-        if (!isIntegerValue(command.amplifier)) {
+        if (command.amplifier != undefined && !isIntegerValue(command.amplifier)) {
             addIssue(
                 issues,
                 ValidationLevel.Error,
@@ -374,8 +426,18 @@ namespace MCFunctionValidator {
             );
         }
 
+        if (command.hideParticles != undefined && command.amplifier == undefined) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_AMPLIFIER_REQUIRED_FOR_HIDE_PARTICLES",
+                "Effect amplifier must be present before hide particles."
+            );
+        }
+
         return issues;
     }
+
 
     export function validateTeleportCommand(
         command: MCFunctionAST.TeleportCommand
