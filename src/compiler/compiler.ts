@@ -45,11 +45,34 @@ namespace MCFunctionCompiler {
         let result =
             "give " +
             compileSelector(command.target) +
-            " " + command.item.id +
-            " " + command.item.amount +
-            " " + command.item.data;
+            " " + command.item.id;
 
-        if (MCFunctionAST.hasItemCommandComponents(command.item.components)) {
+        let hasComponents = !!command.item.components &&
+            MCFunctionAST.hasItemCommandComponents(command.item.components);
+
+        // GIVE optional arguments are positional. Preserve omission when
+        // possible, and insert Bedrock defaults only when a later slot exists.
+        if (
+            command.item.amount == undefined &&
+            command.item.data == undefined &&
+            !hasComponents
+        ) {
+            return result;
+        }
+
+        let amount = command.item.amount;
+        if (amount == undefined) amount = 1;
+        result = result + " " + amount;
+
+        if (command.item.data == undefined && !hasComponents) {
+            return result;
+        }
+
+        let data = command.item.data;
+        if (data == undefined) data = 0;
+        result = result + " " + data;
+
+        if (hasComponents) {
             result = result + " " + compileItemCommandComponents(command.item.components);
         }
 
@@ -182,21 +205,26 @@ namespace MCFunctionCompiler {
     function compileTeleport(command: MCFunctionAST.TeleportCommand): string {
         let result = "tp " + compileSelector(command.target) + " ";
 
-        if (command.mode == MCFunctionAST.TeleportMode.Entity) {
-            result = result + compileSelector(command.destinationEntity);
+        if (command.destination.kind == MCFunctionAST.TeleportDestinationKind.Entity) {
+            result = result + compileSelector(command.destination.entity);
         } else {
-            result = result + compilePosition(command.destinationPosition);
+            result = result + compilePosition(command.destination.position);
 
-            if (command.mode == MCFunctionAST.TeleportMode.Rotation) {
-                result = result + " " + compileRotation(command.rotation);
-            } else if (command.mode == MCFunctionAST.TeleportMode.FacingPosition) {
-                result = result + " facing " + compilePosition(command.facingPosition);
-            } else if (command.mode == MCFunctionAST.TeleportMode.FacingEntity) {
-                result = result + " facing " + compileSelector(command.facingEntity);
+            if (command.orientation) {
+                if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.Rotation) {
+                    result = result + " " + compileRotation(command.orientation.rotation);
+                } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingPosition) {
+                    result = result + " facing " + compilePosition(command.orientation.facingPosition);
+                } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingEntity) {
+                    result = result + " facing " + compileSelector(command.orientation.facingEntity);
+                }
             }
         }
 
-        result = result + " " + (command.checkForBlocks ? "true" : "false");
+        if (command.checkForBlocks != undefined) {
+            result = result + " " + (command.checkForBlocks ? "true" : "false");
+        }
+
         return result;
     }
 
