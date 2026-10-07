@@ -43,7 +43,6 @@
         "commands/mcfunction.ts",
         "commands/give.ts",
         "commands/summon.ts",
-        "commands/effect.ts",
         "commands/teleport.ts",
         "src/blocks/command_adapter.ts",
         "src/compiler/compiler.ts",
@@ -67,6 +66,7 @@
         "docs/CHANGELOG_0.0.21.md",
         "docs/CHANGELOG_SUMMON_PREVIEW_2026-10-06.md",
         "docs/SUMMON_PREVIEW_TEST.md",
+        "commands/effect.ts",
         "docs/EFFECT.md",
         "docs/CHANGELOG_EFFECT_2026-10-07.md",
         "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md"
