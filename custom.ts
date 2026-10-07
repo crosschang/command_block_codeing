@@ -258,6 +258,31 @@ namespace Command {
         }
     }
 
+    /**
+     * Wrapper for the optional EFFECT amplifier.
+     *
+     * This must be an object reporter instead of an optional primitive number.
+     * MakeCode can materialize primitive defaults (0 / false) while an
+     * expandable argument is visually collapsed. That made an omitted
+     * amplifier look present at runtime.
+     */
+    export class EffectAmplifierValue {
+        amplifier: number;
+
+        constructor(amplifier: number) {
+            this.amplifier = amplifier;
+        }
+    }
+
+    /** Wrapper for the optional EFFECT hide-particles value. */
+    export class EffectParticlesValue {
+        hideParticles: boolean;
+
+        constructor(hideParticles: boolean) {
+            this.hideParticles = hideParticles;
+        }
+    }
+
     /** Apply one status effect. Minecraft uses 30 seconds when duration is omitted. */
     //% blockId=mcfunction_effect_action_apply
     //% group="EFFECT" weight=99
@@ -316,6 +341,25 @@ namespace Command {
         );
     }
 
+
+    /** Optional EFFECT amplifier reporter. */
+    //% blockId=mcfunction_effect_amplifier
+    //% group="EFFECT" weight=95
+    //% block="amplifier $amplifier"
+    //% amplifier.defl=0
+    export function effectAmplifier(amplifier: number): EffectAmplifierValue {
+        return new EffectAmplifierValue(amplifier);
+    }
+
+    /** Optional EFFECT particle-visibility reporter. */
+    //% blockId=mcfunction_effect_particles
+    //% group="EFFECT" weight=94
+    //% block="hide particles $hideParticles"
+    //% hideParticles.defl=false
+    export function effectParticles(hideParticles: boolean): EffectParticlesValue {
+        return new EffectParticlesValue(hideParticles);
+    }
+
     /**
      * Unified EFFECT command block.
      *
@@ -333,27 +377,37 @@ namespace Command {
      */
     //% blockId=mcfunction_effect
     //% group="EFFECT" weight=100
-    //% block="EFFECT target $target action $action || $duration amplifier $amplifier hide particles $hideParticles"
+    //% block="EFFECT target $target action $action || $duration $amplifier $particles"
     //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
     //% action.shadow="mcfunction_effect_action_apply"
     //% duration.shadow="mcfunction_effect_duration_seconds"
-    //% amplifier.defl=0
-    //% hideParticles.defl=false
+    //% amplifier.shadow="mcfunction_effect_amplifier"
+    //% particles.shadow="mcfunction_effect_particles"
     export function effect(
         target: MCFunctionFields.SelectorValue,
         action: EffectActionValue,
         duration?: EffectDurationValue,
-        amplifier?: number,
-        hideParticles?: boolean
+        amplifier?: EffectAmplifierValue,
+        particles?: EffectParticlesValue
     ): void {
         let durationMode: MCFunctionAST.EffectDurationMode = undefined;
         let seconds: number = undefined;
+        let amplifierValue: number = undefined;
+        let hideParticlesValue: boolean = undefined;
 
         if (duration) {
             durationMode = duration.mode;
             seconds = duration.seconds;
+        }
+
+        if (amplifier) {
+            amplifierValue = amplifier.amplifier;
+        }
+
+        if (particles) {
+            hideParticlesValue = particles.hideParticles;
         }
 
         executeCommand(
@@ -363,8 +417,8 @@ namespace Command {
                 action.effectId,
                 durationMode,
                 seconds,
-                amplifier,
-                hideParticles
+                amplifierValue,
+                hideParticlesValue
             )
         );
     }
