@@ -155,29 +155,41 @@ FunctionFile.define("test/summon_preview_orientation", function () {
 })
 
 
-// EFFECT structured compiler/runtime smoke tests.
+// EFFECT unified block/compiler/runtime smoke tests.
 FunctionFile.define("test/effect", function () {
+    // Default duration omitted: Minecraft default duration.
     Command.effect(
         MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
-        MCFunctionEffectLibrary.speed(),
-        30,
-        0,
-        false
+        Command.effectApply(MCFunctionEffectLibrary.speed())
     )
 
-    Command.effectInfinite(
+    // Timed Speed II for 10 seconds.
+    Command.effect(
         MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
-        MCFunctionEffectLibrary.speed(),
+        Command.effectApply(MCFunctionEffectLibrary.speed()),
+        Command.effectSeconds(10),
         1,
         false
     )
 
-    Command.effectClear(
+    // Infinite Speed II.
+    Command.effect(
         MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
-        MCFunctionEffectLibrary.speed()
+        Command.effectApply(MCFunctionEffectLibrary.speed()),
+        Command.effectInfinite(),
+        1,
+        false
     )
 
-    Command.effectClearAll(
-        MCFunctionFields.self(MCFunctionFields.noSelectorCondition())
+    // Clear only Speed.
+    Command.effect(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
+        Command.effectClear(MCFunctionEffectLibrary.speed())
+    )
+
+    // Clear every active effect.
+    Command.effect(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
+        Command.effectClear()
     )
 })
