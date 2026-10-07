@@ -64,6 +64,42 @@ namespace MCFunctionBlocks {
         );
     }
 
+    export function createEffectAddCommand(
+        target: MCFunctionAST.Selector,
+        effectId: string,
+        seconds: number,
+        amplifier: number,
+        hideParticles: boolean
+    ): MCFunctionAST.EffectCommand {
+        return MCFunctionAST.createEffectAddCommand(
+            target, effectId, seconds, amplifier, hideParticles
+        );
+    }
+
+    export function createEffectInfiniteCommand(
+        target: MCFunctionAST.Selector,
+        effectId: string,
+        amplifier: number,
+        hideParticles: boolean
+    ): MCFunctionAST.EffectCommand {
+        return MCFunctionAST.createEffectInfiniteCommand(
+            target, effectId, amplifier, hideParticles
+        );
+    }
+
+    export function createEffectClearAllCommand(
+        target: MCFunctionAST.Selector
+    ): MCFunctionAST.EffectCommand {
+        return MCFunctionAST.createEffectClearAllCommand(target);
+    }
+
+    export function createEffectClearSpecificCommand(
+        target: MCFunctionAST.Selector,
+        effectId: string
+    ): MCFunctionAST.EffectCommand {
+        return MCFunctionAST.createEffectClearSpecificCommand(target, effectId);
+    }
+
     export function createTeleportToPositionCommand(
         target: MCFunctionAST.Selector,
         destination: MCFunctionAST.Position,

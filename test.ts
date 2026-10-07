@@ -153,3 +153,31 @@ FunctionFile.define("test/summon_preview_orientation", function () {
         )
     )
 })
+
+
+// EFFECT structured compiler/runtime smoke tests.
+FunctionFile.define("test/effect", function () {
+    Command.effect(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
+        MCFunctionEffectLibrary.speed(),
+        30,
+        0,
+        false
+    )
+
+    Command.effectInfinite(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
+        MCFunctionEffectLibrary.speed(),
+        1,
+        false
+    )
+
+    Command.effectClear(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition()),
+        MCFunctionEffectLibrary.speed()
+    )
+
+    Command.effectClearAll(
+        MCFunctionFields.self(MCFunctionFields.noSelectorCondition())
+    )
+})

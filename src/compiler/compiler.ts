@@ -20,6 +20,9 @@ namespace MCFunctionCompiler {
             case MCFunctionAST.CommandKind.Summon:
                 return compileSummon(<MCFunctionAST.SummonCommand>command);
 
+            case MCFunctionAST.CommandKind.Effect:
+                return compileEffect(<MCFunctionAST.EffectCommand>command);
+
             default:
                 return "";
         }
@@ -51,6 +54,32 @@ namespace MCFunctionCompiler {
         }
 
         return result;
+    }
+
+    function compileEffect(command: MCFunctionAST.EffectCommand): string {
+        let result = "effect " + compileSelector(command.target) + " ";
+
+        if (command.mode == MCFunctionAST.EffectMode.ClearAll) {
+            return result + "clear";
+        }
+
+        if (command.mode == MCFunctionAST.EffectMode.ClearSpecific) {
+            return result + "clear " + command.effectId;
+        }
+
+        let duration = "";
+        if (command.durationMode == MCFunctionAST.EffectDurationMode.Infinite) {
+            duration = "infinite";
+        } else {
+            // Undefined durationMode is treated as Seconds for compatibility
+            // with EffectCommand values created before infinite support existed.
+            duration = "" + command.seconds;
+        }
+
+        return result + command.effectId +
+            " " + duration +
+            " " + command.amplifier +
+            " " + (command.hideParticles ? "true" : "false");
     }
 
     function compileItemCommandComponents(

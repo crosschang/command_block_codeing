@@ -304,6 +304,79 @@ namespace MCFunctionValidator {
         return issues;
     }
 
+    export function validateEffectCommand(
+        command: MCFunctionAST.EffectCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        appendIssues(issues, validateSelector(command.target));
+
+        if (command.mode == MCFunctionAST.EffectMode.ClearAll) {
+            return issues;
+        }
+
+        if (
+            command.mode != MCFunctionAST.EffectMode.Add &&
+            command.mode != MCFunctionAST.EffectMode.ClearSpecific
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_MODE_INVALID",
+                "Unsupported effect command mode."
+            );
+            return issues;
+        }
+
+        if (!isSafeIdToken(command.effectId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_ID_INVALID",
+                "Effect ID is empty or contains invalid command characters."
+            );
+        }
+
+        if (command.mode == MCFunctionAST.EffectMode.ClearSpecific) {
+            return issues;
+        }
+
+        if (
+            command.durationMode != undefined &&
+            command.durationMode != MCFunctionAST.EffectDurationMode.Seconds &&
+            command.durationMode != MCFunctionAST.EffectDurationMode.Infinite
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_DURATION_MODE_INVALID",
+                "Unsupported effect duration mode."
+            );
+        }
+
+        if (command.durationMode != MCFunctionAST.EffectDurationMode.Infinite) {
+            if (!isIntegerValue(command.seconds)) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "EFFECT_SECONDS_NOT_INTEGER",
+                    "Effect seconds must be an integer."
+                );
+            }
+        }
+
+        if (!isIntegerValue(command.amplifier)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "EFFECT_AMPLIFIER_NOT_INTEGER",
+                "Effect amplifier must be an integer."
+            );
+        }
+
+        return issues;
+    }
+
     export function validateTeleportCommand(
         command: MCFunctionAST.TeleportCommand
     ): ValidationIssue[] {
@@ -538,6 +611,10 @@ namespace MCFunctionValidator {
 
         if (command.kind == MCFunctionAST.CommandKind.Summon) {
             appendIssues(issues, validateSummonCommand(<MCFunctionAST.SummonCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Effect) {
+            appendIssues(issues, validateEffectCommand(<MCFunctionAST.EffectCommand>command));
         }
 
         return issues;

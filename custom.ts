@@ -10,7 +10,7 @@
  * emulates only the orientation while the exported command stays unchanged.
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
-//% groups='["SUMMON", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
+//% groups='["SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
         if (!FunctionFile.allowCommandExecution()) {
@@ -231,6 +231,92 @@ namespace Command {
                 orientation ? orientation.orientation : MCFunctionAST.createSummonNoOrientation(),
                 spawnEvent,
                 nameTag
+            )
+        );
+    }
+
+
+    /** Apply a status effect for a numeric duration in seconds. */
+    //% blockId=mcfunction_effect_add
+    //% group="EFFECT" weight=100
+    //% block="EFFECT target $target effect $effect seconds $seconds amplifier $amplifier hide particles $hideParticles"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% effect.shadow="mcfunction_effect_registry_speed"
+    //% seconds.defl=30
+    //% amplifier.defl=0
+    //% hideParticles.defl=false
+    export function effect(
+        target: MCFunctionFields.SelectorValue,
+        effect: MCFunctionFields.EffectValue,
+        seconds: number,
+        amplifier: number,
+        hideParticles: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createEffectAddCommand(
+                target.selector,
+                effect.effectId,
+                seconds,
+                amplifier,
+                hideParticles
+            )
+        );
+    }
+
+    /** Apply a status effect with infinite duration. */
+    //% blockId=mcfunction_effect_infinite
+    //% group="EFFECT" weight=95
+    //% block="EFFECT INFINITE target $target effect $effect amplifier $amplifier hide particles $hideParticles"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% effect.shadow="mcfunction_effect_registry_speed"
+    //% amplifier.defl=0
+    //% hideParticles.defl=false
+    export function effectInfinite(
+        target: MCFunctionFields.SelectorValue,
+        effect: MCFunctionFields.EffectValue,
+        amplifier: number,
+        hideParticles: boolean
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createEffectInfiniteCommand(
+                target.selector,
+                effect.effectId,
+                amplifier,
+                hideParticles
+            )
+        );
+    }
+
+    /** Clear every status effect from a target. */
+    //% blockId=mcfunction_effect_clear_all
+    //% group="EFFECT" weight=90
+    //% block="EFFECT CLEAR ALL target $target"
+    //% target.shadow="mcfunction_selector_self"
+    export function effectClearAll(
+        target: MCFunctionFields.SelectorValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createEffectClearAllCommand(target.selector)
+        );
+    }
+
+    /** Clear one specific status effect from a target. */
+    //% blockId=mcfunction_effect_clear_specific
+    //% group="EFFECT" weight=80
+    //% block="EFFECT CLEAR target $target effect $effect"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% effect.shadow="mcfunction_effect_registry_speed"
+    export function effectClear(
+        target: MCFunctionFields.SelectorValue,
+        effect: MCFunctionFields.EffectValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createEffectClearSpecificCommand(
+                target.selector,
+                effect.effectId
             )
         );
     }
