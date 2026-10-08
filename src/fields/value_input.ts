@@ -1,3 +1,25 @@
+namespace MCFunctionFields {
+    /**
+     * Fixed Minecraft command boolean literal used by MakeCode dropdown fields.
+     *
+     * Use this for command grammar positions that accept only literal
+     * `true` / `false`. An enum parameter renders as a fixed dropdown in
+     * MakeCode, so variables and computed Boolean reporter blocks cannot be
+     * plugged into the slot. AST/Core layers continue to use plain boolean.
+     */
+    export enum BooleanLiteral {
+        //% block="false"
+        False = 0,
+
+        //% block="true"
+        True = 1
+    }
+
+    export function booleanLiteralValue(value: BooleanLiteral): boolean {
+        return value == BooleanLiteral.True;
+    }
+}
+
 /**
  * Minimal direct-input value wrappers used by restored legacy fields.
  *

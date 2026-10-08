@@ -16,15 +16,16 @@ namespace MCFunctionBlocks {
     export function createGiveCommand(
         target: MCFunctionAST.Selector,
         itemId: string,
-        amount: number,
-        data: number
+        amount?: number,
+        data?: number,
+        components?: MCFunctionAST.ItemCommandComponents
     ): MCFunctionAST.GiveCommand {
-        return MCFunctionAST.createGiveCommand(
-            target,
-            MCFunctionAST.createItemStack(itemId, amount, data)
-        );
+        let item = MCFunctionAST.createItemStack(itemId, amount, data);
+        item.components = components;
+        return MCFunctionAST.createGiveCommand(target, item);
     }
 
+    // Compatibility helper for older call sites.
     export function createGiveCommandWithComponents(
         target: MCFunctionAST.Selector,
         itemId: string,
@@ -39,7 +40,6 @@ namespace MCFunctionBlocks {
             )
         );
     }
-
 
 
     export function createSummonSimpleCommand(
@@ -125,6 +125,27 @@ namespace MCFunctionBlocks {
         return MCFunctionAST.createEffectClearSpecificCommand(target, effectId);
     }
 
+
+    export function createTeleportCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.TeleportDestination,
+        orientation?: MCFunctionAST.TeleportOrientation,
+        checkForBlocks?: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportCommand(
+            target, destination, orientation, checkForBlocks
+        );
+    }
+
+    export function createTeleportSelfCommand(
+        destination: MCFunctionAST.TeleportDestination,
+        orientation?: MCFunctionAST.TeleportOrientation,
+        checkForBlocks?: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportSelfCommand(
+            destination, orientation, checkForBlocks
+        );
+    }
 
     export function createTeleportToPositionCommand(
         target: MCFunctionAST.Selector,

@@ -184,14 +184,20 @@ namespace MCFunctionValidator {
             );
         }
 
-        if (!isIntegerValue(item.amount)) {
-            addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NOT_INTEGER", "Item amount must be an integer.");
-        } else if (item.amount <= 0) {
-            addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NON_POSITIVE", "Item amount must be at least 1.");
+        if (item.amount != undefined) {
+            if (!isIntegerValue(item.amount)) {
+                addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NOT_INTEGER", "Item amount must be an integer.");
+            } else if (item.amount <= 0) {
+                addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NON_POSITIVE", "Item amount must be at least 1.");
+            }
         }
 
-        if (!isIntegerValue(item.data)) {
+        if (item.data != undefined && !isIntegerValue(item.data)) {
             addIssue(issues, ValidationLevel.Error, "ITEM_DATA_NOT_INTEGER", "Item data must be an integer.");
+        }
+
+        if (!item.components) {
+            return issues;
         }
 
         for (let i = 0; i < item.components.canDestroy.length; i++) {
@@ -444,44 +450,71 @@ namespace MCFunctionValidator {
     ): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
-        appendIssues(issues, validateSelector(command.target));
+        // target is optional: omitted target is the Bedrock `tp <destination>`
+        // self-teleport form. Validate only when an explicit victim exists.
+        if (command.target) {
+            appendIssues(issues, validateSelector(command.target));
+        }
 
-        if (command.mode == MCFunctionAST.TeleportMode.Entity) {
-            if (!command.destinationEntity) {
+        if (!command.destination) {
+            addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_MISSING", "Teleport destination is missing.");
+            return issues;
+        }
+
+        if (command.destination.kind == MCFunctionAST.TeleportDestinationKind.Entity) {
+            if (!command.destination.entity) {
                 addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_ENTITY_MISSING", "Teleport destination entity is missing.");
             } else {
-                appendIssues(issues, validateSelector(command.destinationEntity));
+                appendIssues(issues, validateSelector(command.destination.entity));
+            }
+
+            if (command.orientation) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "TP_ENTITY_DESTINATION_HAS_ORIENTATION",
+                    "Teleport orientation is only valid with a position destination."
+                );
             }
             return issues;
         }
 
-        if (!command.destinationPosition) {
+        if (command.destination.kind != MCFunctionAST.TeleportDestinationKind.Position) {
+            addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_KIND_INVALID", "Unsupported teleport destination kind.");
+            return issues;
+        }
+
+        if (!command.destination.position) {
             addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_POSITION_MISSING", "Teleport destination position is missing.");
             return issues;
         }
 
-        appendIssues(issues, validatePosition(command.destinationPosition));
+        appendIssues(issues, validatePosition(command.destination.position));
 
-        if (command.mode == MCFunctionAST.TeleportMode.Rotation) {
-            if (!command.rotation) {
+        if (!command.orientation) {
+            return issues;
+        }
+
+        if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.Rotation) {
+            if (!command.orientation.rotation) {
                 addIssue(issues, ValidationLevel.Error, "TP_ROTATION_MISSING", "Teleport rotation is missing.");
             } else {
-                appendIssues(issues, validateRotation(command.rotation));
+                appendIssues(issues, validateRotation(command.orientation.rotation));
             }
-        } else if (command.mode == MCFunctionAST.TeleportMode.FacingPosition) {
-            if (!command.facingPosition) {
+        } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingPosition) {
+            if (!command.orientation.facingPosition) {
                 addIssue(issues, ValidationLevel.Error, "TP_FACING_POSITION_MISSING", "Teleport facing position is missing.");
             } else {
-                appendIssues(issues, validatePosition(command.facingPosition));
+                appendIssues(issues, validatePosition(command.orientation.facingPosition));
             }
-        } else if (command.mode == MCFunctionAST.TeleportMode.FacingEntity) {
-            if (!command.facingEntity) {
+        } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingEntity) {
+            if (!command.orientation.facingEntity) {
                 addIssue(issues, ValidationLevel.Error, "TP_FACING_ENTITY_MISSING", "Teleport facing entity is missing.");
             } else {
-                appendIssues(issues, validateSelector(command.facingEntity));
+                appendIssues(issues, validateSelector(command.orientation.facingEntity));
             }
-        } else if (command.mode != MCFunctionAST.TeleportMode.Position) {
-            addIssue(issues, ValidationLevel.Error, "TP_MODE_INVALID", "Unsupported teleport mode.");
+        } else {
+            addIssue(issues, ValidationLevel.Error, "TP_ORIENTATION_KIND_INVALID", "Unsupported teleport orientation kind.");
         }
 
         return issues;
