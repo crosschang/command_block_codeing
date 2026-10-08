@@ -10,7 +10,7 @@
  * emulates only the orientation while the exported command stays unchanged.
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
-//% groups='["SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
+//% groups='["TAG", "GAMEMODE", "KILL", "CLEAR", "SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
         if (!FunctionFile.allowCommandExecution()) {
@@ -82,34 +82,82 @@ namespace Command {
 
 
 
-    /** Give an item with data and Bedrock command components. */
+    /** Wrapper for the optional GIVE count argument. */
+    export class GiveCountValue {
+        count: number;
+
+        constructor(count: number) {
+            this.count = count;
+        }
+    }
+
+    /** Wrapper for the optional GIVE data argument. */
+    export class GiveDataValue {
+        data: number;
+
+        constructor(data: number) {
+            this.data = data;
+        }
+    }
+
+    /** Optional GIVE count reporter. */
+    //% blockId=mcfunction_give_count
+    //% group="GIVE" weight=89
+    //% block="count $count"
+    //% count.defl=1
+    export function giveCount(count: number): GiveCountValue {
+        return new GiveCountValue(count);
+    }
+
+    /** Optional GIVE data reporter. */
+    //% blockId=mcfunction_give_data
+    //% group="GIVE" weight=88
+    //% block="data $data"
+    //% data.defl=0
+    export function giveData(data: number): GiveDataValue {
+        return new GiveDataValue(data);
+    }
+
+    /**
+     * Give an item.
+     *
+     * Bedrock optional tail order:
+     * - count
+     * - data
+     * - item components
+     *
+     * Count/data use object reporters because MakeCode expandable primitive
+     * defaults cannot distinguish "collapsed / absent" from 0 or 1 reliably.
+     */
     //% blockId=command_give
     //% group="GIVE" weight=90
-    //% block="GIVE target $target item $item amount $amount data $data components $components"
+    //% block="GIVE target $target item $item || $count $data $components"
+    //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% target.shadow="mcfunction_selector_self"
     //% item.shadow="mcfunction_item_id_text_shadow"
-    //% amount.defl=1
-    //% data.defl=0
+    //% count.shadow="mcfunction_give_count"
+    //% data.shadow="mcfunction_give_data"
     //% components.shadow="mcfunction_item_components"
     export function give(
         target: MCFunctionFields.SelectorValue,
         item: string,
-        amount: number,
-        data: number,
-        components: MCFunctionFields.ItemComponentsValue
+        count?: GiveCountValue,
+        data?: GiveDataValue,
+        components?: MCFunctionFields.ItemComponentsValue
     ): void {
         let itemValue = MCFunctionFields.item(item);
-        let command = MCFunctionBlocks.createGiveCommandWithComponents(
-            target.selector,
-            itemValue.itemId,
-            amount,
-            data,
-            components.components
-        );
-        executeCommand(command);
-    }
 
+        executeCommand(
+            MCFunctionBlocks.createGiveCommand(
+                target.selector,
+                itemValue.itemId,
+                count ? count.count : undefined,
+                data ? data.data : undefined,
+                components ? components.components : undefined
+            )
+        );
+    }
 
     /** Wrapper for SUMMON orientation reporter blocks. */
     export class SummonOrientationValue {
@@ -355,9 +403,12 @@ namespace Command {
     //% blockId=mcfunction_effect_particles
     //% group="EFFECT" weight=94
     //% block="hide particles $hideParticles"
-    //% hideParticles.defl=false
-    export function effectParticles(hideParticles: boolean): EffectParticlesValue {
-        return new EffectParticlesValue(hideParticles);
+    export function effectParticles(
+        hideParticles: MCFunctionFields.BooleanLiteral
+    ): EffectParticlesValue {
+        return new EffectParticlesValue(
+            MCFunctionFields.booleanLiteralValue(hideParticles)
+        );
     }
 
     /**
@@ -424,14 +475,183 @@ namespace Command {
     }
 
 
-    /** Teleport a target to a position. */
-    //% blockId=mcfunction_tp_position
-    //% group="TELEPORT" weight=100
-    //% block="TP target $target to position $destination check blocks $checkForBlocks"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
+    /** Wrapper for TP destination reporter blocks. */
+    export class TeleportDestinationValue {
+        destination: MCFunctionAST.TeleportDestination;
+
+        constructor(destination: MCFunctionAST.TeleportDestination) {
+            this.destination = destination;
+        }
+    }
+
+    /** Wrapper for optional TP orientation reporter blocks. */
+    export class TeleportOrientationValue {
+        orientation: MCFunctionAST.TeleportOrientation;
+
+        constructor(orientation: MCFunctionAST.TeleportOrientation) {
+            this.orientation = orientation;
+        }
+    }
+
+    /** Position destination for TP. */
+    //% blockId=mcfunction_tp_destination_position
+    //% group="TELEPORT" weight=99
+    //% block="position $destination"
     //% destination.shadow="mcfunction_position_relative"
-    //% checkForBlocks.defl=false
+    export function teleportDestinationPosition(
+        destination: MCFunctionPositionFields.PositionValue
+    ): TeleportDestinationValue {
+        return new TeleportDestinationValue(
+            MCFunctionAST.createTeleportPositionDestination(destination.position)
+        );
+    }
+
+    /** Entity destination for TP. */
+    //% blockId=mcfunction_tp_destination_entity
+    //% group="TELEPORT" weight=98
+    //% block="entity $destination"
+    //% destination.shadow="mcfunction_selector_nearest_player"
+    export function teleportDestinationEntity(
+        destination: MCFunctionFields.SelectorValue
+    ): TeleportDestinationValue {
+        return new TeleportDestinationValue(
+            MCFunctionAST.createTeleportEntityDestination(destination.selector)
+        );
+    }
+
+    /** Yaw/pitch orientation for a position TP destination. */
+    //% blockId=mcfunction_tp_orientation_rotation
+    //% group="TELEPORT" weight=97
+    //% block="rotation $rotation"
+    //% rotation.shadow="mcfunction_rotation_absolute"
+    export function teleportRotation(
+        rotation: MCFunctionRotationFields.RotationValue
+    ): TeleportOrientationValue {
+        return new TeleportOrientationValue(
+            MCFunctionAST.createTeleportRotationOrientation(rotation.rotation)
+        );
+    }
+
+    /** Face a position after teleporting to a position destination. */
+    //% blockId=mcfunction_tp_orientation_facing_position
+    //% group="TELEPORT" weight=96
+    //% block="facing position $facingPosition"
+    //% facingPosition.shadow="mcfunction_position_relative"
+    export function teleportFacingPositionOption(
+        facingPosition: MCFunctionPositionFields.PositionValue
+    ): TeleportOrientationValue {
+        return new TeleportOrientationValue(
+            MCFunctionAST.createTeleportFacingPositionOrientation(
+                facingPosition.position
+            )
+        );
+    }
+
+    /** Face an entity after teleporting to a position destination. */
+    //% blockId=mcfunction_tp_orientation_facing_entity
+    //% group="TELEPORT" weight=95
+    //% block="facing entity $facingEntity"
+    //% facingEntity.shadow="mcfunction_selector_nearest_player"
+    export function teleportFacingEntityOption(
+        facingEntity: MCFunctionFields.SelectorValue
+    ): TeleportOrientationValue {
+        return new TeleportOrientationValue(
+            MCFunctionAST.createTeleportFacingEntityOrientation(
+                facingEntity.selector
+            )
+        );
+    }
+
+
+
+    /**
+     * TP the command executor itself.
+     *
+     * This maps to Bedrock's no-victim overload:
+     *   tp <destination> [orientation] [checkForBlocks]
+     *
+     * Destination remains a shared reporter (position / entity).
+     * Orientation is valid only for a position destination and is checked by
+     * the shared Teleport validator.
+     */
+    //% blockId=mcfunction_tp_self
+    //% group="TELEPORT" weight=100
+    //% block="TP destination $destination check blocks $checkForBlocks || $orientation"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% destination.shadow="mcfunction_tp_destination_position"
+    //% orientation.shadow="mcfunction_tp_orientation_rotation"
+    export function teleportSelf(
+        destination: TeleportDestinationValue,
+        checkForBlocks: MCFunctionFields.BooleanLiteral,
+        orientation?: TeleportOrientationValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportSelfCommand(
+                destination.destination,
+                orientation ? orientation.orientation : undefined,
+                MCFunctionFields.booleanLiteralValue(checkForBlocks)
+            )
+        );
+    }
+
+    /**
+     * TP an explicit victim/target.
+     *
+     * This maps to Bedrock's victim overload:
+     *   tp <victim> <destination> [orientation] [checkForBlocks]
+     */
+    //% blockId=mcfunction_tp_target
+    //% group="TELEPORT" weight=99
+    //% block="TP TARGET victim $victim destination $destination check blocks $checkForBlocks || $orientation"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% victim.shadow="mcfunction_selector_self"
+    //% destination.shadow="mcfunction_tp_destination_position"
+    //% orientation.shadow="mcfunction_tp_orientation_rotation"
+    export function teleportTarget(
+        victim: MCFunctionFields.SelectorValue,
+        destination: TeleportDestinationValue,
+        checkForBlocks: MCFunctionFields.BooleanLiteral,
+        orientation?: TeleportOrientationValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportCommand(
+                victim.selector,
+                destination.destination,
+                orientation ? orientation.orientation : undefined,
+                MCFunctionFields.booleanLiteralValue(checkForBlocks)
+            )
+        );
+    }
+
+    /**
+     * Previous unified TP API retained so JavaScript/Blocks created during the
+     * first GIVE/TP unification pass can still load. New toolbox code should
+     * use teleportSelf() or teleportTarget().
+     */
+    //% blockId=mcfunction_tp
+    //% blockHidden=true
+    export function teleport(
+        target: MCFunctionFields.SelectorValue,
+        destination: TeleportDestinationValue,
+        checkForBlocks: boolean,
+        orientation?: TeleportOrientationValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTeleportCommand(
+                target.selector,
+                destination.destination,
+                orientation ? orientation.orientation : undefined,
+                checkForBlocks ? true : undefined
+            )
+        );
+    }
+
+    // Legacy API wrappers remain for JavaScript compatibility, but are hidden
+    // from the toolbox. New code should use Command.teleportSelf(...) or Command.teleportTarget(...).
+
+    //% blockHidden=true
     export function teleportToPosition(
         target: MCFunctionFields.SelectorValue,
         destination: MCFunctionPositionFields.PositionValue,
@@ -444,14 +664,7 @@ namespace Command {
         );
     }
 
-    /** Teleport a target to another entity. */
-    //% blockId=mcfunction_tp_entity
-    //% group="TELEPORT" weight=90
-    //% block="TP target $target to entity $destination check blocks $checkForBlocks"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% destination.shadow="mcfunction_selector_nearest_player"
-    //% checkForBlocks.defl=false
+    //% blockHidden=true
     export function teleportToEntity(
         target: MCFunctionFields.SelectorValue,
         destination: MCFunctionFields.SelectorValue,
@@ -464,15 +677,7 @@ namespace Command {
         );
     }
 
-    /** Teleport a target to a position with yaw/pitch rotation. */
-    //% blockId=mcfunction_tp_rotation
-    //% group="TELEPORT" weight=80
-    //% block="TP target $target to position $destination rotation $rotation check blocks $checkForBlocks"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% destination.shadow="mcfunction_position_relative"
-    //% rotation.shadow="mcfunction_rotation_absolute"
-    //% checkForBlocks.defl=false
+    //% blockHidden=true
     export function teleportWithRotation(
         target: MCFunctionFields.SelectorValue,
         destination: MCFunctionPositionFields.PositionValue,
@@ -486,15 +691,7 @@ namespace Command {
         );
     }
 
-    /** Teleport a target to a position while facing another position. */
-    //% blockId=mcfunction_tp_facing_position
-    //% group="TELEPORT" weight=70
-    //% block="TP target $target to position $destination facing position $facingPosition check blocks $checkForBlocks"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% destination.shadow="mcfunction_position_relative"
-    //% facingPosition.shadow="mcfunction_position_relative"
-    //% checkForBlocks.defl=false
+    //% blockHidden=true
     export function teleportFacingPosition(
         target: MCFunctionFields.SelectorValue,
         destination: MCFunctionPositionFields.PositionValue,
@@ -508,15 +705,7 @@ namespace Command {
         );
     }
 
-    /** Teleport a target to a position while facing an entity. */
-    //% blockId=mcfunction_tp_facing_entity
-    //% group="TELEPORT" weight=60
-    //% block="TP target $target to position $destination facing entity $facingEntity check blocks $checkForBlocks"
-    //% inlineInputMode=external
-    //% target.shadow="mcfunction_selector_self"
-    //% destination.shadow="mcfunction_position_relative"
-    //% facingEntity.shadow="mcfunction_selector_nearest_player"
-    //% checkForBlocks.defl=false
+    //% blockHidden=true
     export function teleportFacingEntity(
         target: MCFunctionFields.SelectorValue,
         destination: MCFunctionPositionFields.PositionValue,
@@ -529,4 +718,203 @@ namespace Command {
             )
         );
     }
+
+
+    // ---------------------------------------------------------------------
+    // TAG
+    // ---------------------------------------------------------------------
+
+    /** Reporter value for TAG add/remove/list variants. */
+    export class TagActionValue {
+        action: MCFunctionAST.TagActionKind;
+        name: string;
+
+        constructor(action: MCFunctionAST.TagActionKind, name?: string) {
+            this.action = action;
+            this.name = name;
+        }
+    }
+
+    /** Add a user-defined tag. */
+    //% blockId=mcfunction_tag_action_add
+    //% group="TAG" weight=99
+    //% block="add tag $name"
+    //% name.shadow="text"
+    //% name.defl="test"
+    export function tagAdd(name: string): TagActionValue {
+        return new TagActionValue(MCFunctionAST.TagActionKind.Add, name);
+    }
+
+    /** Remove a user-defined tag. */
+    //% blockId=mcfunction_tag_action_remove
+    //% group="TAG" weight=98
+    //% block="remove tag $name"
+    //% name.shadow="text"
+    //% name.defl="test"
+    export function tagRemove(name: string): TagActionValue {
+        return new TagActionValue(MCFunctionAST.TagActionKind.Remove, name);
+    }
+
+    /** List the target entity's tags. */
+    //% blockId=mcfunction_tag_action_list
+    //% group="TAG" weight=97
+    //% block="list tags"
+    export function tagList(): TagActionValue {
+        return new TagActionValue(MCFunctionAST.TagActionKind.List);
+    }
+
+    /** Manage tags stored on entities. */
+    //% blockId=command_tag
+    //% group="TAG" weight=100
+    //% block="TAG target $target action $action"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% action.shadow="mcfunction_tag_action_add"
+    export function tag(
+        target: MCFunctionFields.SelectorValue,
+        action: TagActionValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createTagCommand(
+                target.selector,
+                action.action,
+                action.name
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // GAMEMODE
+    // ---------------------------------------------------------------------
+
+    /** Set game mode for the executor or an optional player target. */
+    //% blockId=command_gamemode
+    //% group="GAMEMODE" weight=100
+    //% block="GAMEMODE $gameMode || target $target"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    export function gamemode(
+        gameMode: MCFunctionAST.GameMode,
+        target?: MCFunctionFields.SelectorValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createGameModeCommand(
+                gameMode,
+                target ? target.selector : undefined
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // KILL
+    // ---------------------------------------------------------------------
+
+    /** Kill the executor or an optional entity target. */
+    //% blockId=command_kill
+    //% group="KILL" weight=100
+    //% block="KILL || target $target"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    export function kill(
+        target?: MCFunctionFields.SelectorValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createKillCommand(
+                target ? target.selector : undefined
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // CLEAR
+    // ---------------------------------------------------------------------
+
+    /** Wrapper for the optional CLEAR item argument. */
+    export class ClearItemValue {
+        itemId: string;
+
+        constructor(itemId: string) {
+            this.itemId = itemId;
+        }
+    }
+
+    /** Wrapper for the optional CLEAR data argument. */
+    export class ClearDataValue {
+        data: number;
+
+        constructor(data: number) {
+            this.data = data;
+        }
+    }
+
+    /** Wrapper for the optional CLEAR maxCount argument. */
+    export class ClearMaxCountValue {
+        maxCount: number;
+
+        constructor(maxCount: number) {
+            this.maxCount = maxCount;
+        }
+    }
+
+    /** Optional CLEAR item reporter. */
+    //% blockId=mcfunction_clear_item
+    //% group="CLEAR" weight=99
+    //% block="item $item"
+    //% item.shadow="mcfunction_item_id_text_shadow"
+    export function clearItem(item: string): ClearItemValue {
+        return new ClearItemValue(item);
+    }
+
+    /** Optional CLEAR data reporter. Presence is distinct from numeric zero. */
+    //% blockId=mcfunction_clear_data
+    //% group="CLEAR" weight=98
+    //% block="data $data"
+    //% data.defl=-1
+    export function clearData(data: number): ClearDataValue {
+        return new ClearDataValue(data);
+    }
+
+    /** Optional CLEAR maximum count reporter. Zero remains a real value. */
+    //% blockId=mcfunction_clear_max_count
+    //% group="CLEAR" weight=97
+    //% block="max count $maxCount"
+    //% maxCount.defl=-1
+    export function clearMaxCount(maxCount: number): ClearMaxCountValue {
+        return new ClearMaxCountValue(maxCount);
+    }
+
+    /**
+     * Clear player inventory items.
+     * Optional Bedrock argument order is target -> item -> data -> maxCount.
+     */
+    //% blockId=command_clear
+    //% group="CLEAR" weight=100
+    //% block="CLEAR || target $target $item $data $maxCount"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% target.shadow="mcfunction_selector_self"
+    //% item.shadow="mcfunction_clear_item"
+    //% data.shadow="mcfunction_clear_data"
+    //% maxCount.shadow="mcfunction_clear_max_count"
+    export function clear(
+        target?: MCFunctionFields.SelectorValue,
+        item?: ClearItemValue,
+        data?: ClearDataValue,
+        maxCount?: ClearMaxCountValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createClearCommand(
+                target ? target.selector : undefined,
+                item ? item.itemId : undefined,
+                data ? data.data : undefined,
+                maxCount ? maxCount.maxCount : undefined
+            )
+        );
+    }
+
 }

@@ -10,7 +10,11 @@ namespace MCFunctionAST {
         Give = 3,
         Teleport = 4,
         Summon = 5,
-        Effect = 6
+        Effect = 6,
+        Tag = 7,
+        GameMode = 8,
+        Kill = 9,
+        Clear = 10
     }
 
     export interface CommandNode {
