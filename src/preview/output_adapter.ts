@@ -5,9 +5,19 @@
  * actual Minecraft command authored by the user.
  */
 namespace MCFunctionPreview {
-    /** Show one Preview-only informational line to the current MakeCode player. */
+    /**
+     * Show one Preview-only informational line to the current MakeCode player.
+     *
+     * Do not route Preview UI text through player.say(). Minecraft Education can
+     * parse punctuation in that path as command syntax in some runtime cases.
+     * tellraw/rawtext keeps UI punctuation such as [Preview] inside a JSON text
+     * component instead of the command grammar.
+     */
     export function previewSay(message: string): void {
-        player.say("[Preview] " + message);
+        let text = previewEscapeJsonText("[Preview] " + message);
+        player.execute(
+            "tellraw @s {\"rawtext\":[{\"text\":\"" + text + "\"}]}"
+        );
     }
 
     /**

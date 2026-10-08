@@ -81,7 +81,8 @@
         "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md",
         "docs/CHANGELOG_DIRECT_COMMANDS_TAG_GAMEMODE_KILL_CLEAR_2026-10-08.md",
         "docs/CHANGELOG_PREVIEW_QUERY_ADAPTER_2026-10-08.md",
-        "docs/CHANGELOG_PREVIEW_INTERNAL_TAGS_2026-10-08.md"
+        "docs/CHANGELOG_PREVIEW_INTERNAL_TAGS_2026-10-08.md",
+        "docs/CHANGELOG_PREVIEW_OUTPUT_RAWTEXT_2026-10-08.md"
     ],
     "testFiles": [
         "test.ts"
@@ -93,5 +94,5 @@
     "supportedTargets": [
         "minecraft"
     ],
-    "preferredEditor": "blocksprj"
+    "preferredEditor": "tsprj"
 }
