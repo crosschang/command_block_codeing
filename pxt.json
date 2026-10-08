@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.26",
+    "version": "0.0.27",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -14,6 +14,7 @@
         "src/ast/slot.ts",
         "src/ast/selector.ts",
         "src/ast/position.ts",
+        "src/ast/block.ts",
         "src/ast/rotation.ts",
         "src/ast/facing.ts",
         "src/ast/item_components.ts",
@@ -24,6 +25,7 @@
         "src/fields/range_field.ts",
         "src/fields/selector_field.ts",
         "src/fields/position_field.ts",
+        "src/fields/block_state_field.ts",
         "src/fields/rotation_field.ts",
         "src/libraries/item_library.ts",
         "src/libraries/item_library.generated.ts",
@@ -76,6 +78,9 @@
         "commands/gamemode.ts",
         "commands/kill.ts",
         "commands/clear.ts",
+        "commands/setblock.ts",
+        "commands/fill.ts",
+        "commands/clone.ts",
         "docs/EFFECT.md",
         "docs/CHANGELOG_EFFECT_2026-10-07.md",
         "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md",

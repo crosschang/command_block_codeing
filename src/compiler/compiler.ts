@@ -35,6 +35,15 @@ namespace MCFunctionCompiler {
             case MCFunctionAST.CommandKind.Clear:
                 return compileClear(<MCFunctionAST.ClearCommand>command);
 
+            case MCFunctionAST.CommandKind.SetBlock:
+                return compileSetBlock(<MCFunctionAST.SetBlockCommand>command);
+
+            case MCFunctionAST.CommandKind.Fill:
+                return compileFill(<MCFunctionAST.FillCommand>command);
+
+            case MCFunctionAST.CommandKind.Clone:
+                return compileClone(<MCFunctionAST.CloneCommand>command);
+
             default:
                 return "";
         }
@@ -116,6 +125,147 @@ namespace MCFunctionCompiler {
 
         if (command.maxCount != undefined) {
             result = result + " " + command.maxCount;
+        }
+
+        return result;
+    }
+
+    function escapeBlockStateText(value: string): string {
+        let result = "";
+        for (let i = 0; i < value.length; i++) {
+            let ch = value.charAt(i);
+            if (ch == "\\" || ch == "\"") result = result + "\\";
+            result = result + ch;
+        }
+        return result;
+    }
+
+    export function compileBlockStates(states: MCFunctionAST.BlockStates): string {
+        let result = "[";
+
+        for (let i = 0; i < states.entries.length; i++) {
+            if (i > 0) result = result + ",";
+
+            let entry = states.entries[i];
+            result = result + "\"" + escapeBlockStateText(entry.key) + "\":";
+
+            if (entry.kind == MCFunctionAST.BlockStateValueKind.String) {
+                result = result + "\"" + escapeBlockStateText(entry.stringValue) + "\"";
+            } else if (entry.kind == MCFunctionAST.BlockStateValueKind.Number) {
+                result = result + entry.numberValue;
+            } else {
+                result = result + (entry.booleanValue ? "true" : "false");
+            }
+        }
+
+        return result + "]";
+    }
+
+    function compileSetBlockMode(mode: MCFunctionAST.SetBlockMode): string {
+        if (mode == MCFunctionAST.SetBlockMode.Destroy) return "destroy";
+        if (mode == MCFunctionAST.SetBlockMode.Keep) return "keep";
+        return "replace";
+    }
+
+    function compileFillMode(mode: MCFunctionAST.FillMode): string {
+        if (mode == MCFunctionAST.FillMode.Destroy) return "destroy";
+        if (mode == MCFunctionAST.FillMode.Hollow) return "hollow";
+        if (mode == MCFunctionAST.FillMode.Keep) return "keep";
+        if (mode == MCFunctionAST.FillMode.Outline) return "outline";
+        return "replace";
+    }
+
+    function compileCloneMode(mode: MCFunctionAST.CloneMode): string {
+        if (mode == MCFunctionAST.CloneMode.Force) return "force";
+        if (mode == MCFunctionAST.CloneMode.Move) return "move";
+        return "normal";
+    }
+
+    function compileCloneMask(mask: MCFunctionAST.CloneMaskKind): string {
+        if (mask == MCFunctionAST.CloneMaskKind.Masked) return "masked";
+        if (mask == MCFunctionAST.CloneMaskKind.Filtered) return "filtered";
+        return "replace";
+    }
+
+    function compileSetBlock(command: MCFunctionAST.SetBlockCommand): string {
+        let result =
+            "setblock " +
+            compilePosition(command.position) +
+            " " + command.blockId;
+
+        if (command.blockStates && command.blockStates.entries.length > 0) {
+            result = result + " " + compileBlockStates(command.blockStates);
+        }
+
+        if (command.mode != undefined) {
+            result = result + " " + compileSetBlockMode(command.mode);
+        }
+
+        return result;
+    }
+
+    function compileFill(command: MCFunctionAST.FillCommand): string {
+        let result =
+            "fill " +
+            compilePosition(command.from) + " " +
+            compilePosition(command.to) + " " +
+            command.blockId;
+
+        if (command.blockStates && command.blockStates.entries.length > 0) {
+            result = result + " " + compileBlockStates(command.blockStates);
+        }
+
+        if (command.mode != undefined) {
+            result = result + " " + compileFillMode(command.mode);
+        } else if (command.replaceBlockId != undefined) {
+            // Replacement filters require the positional `replace` token.
+            result = result + " replace";
+        }
+
+        if (command.replaceBlockId != undefined) {
+            result = result + " " + command.replaceBlockId;
+
+            if (command.replaceBlockStates && command.replaceBlockStates.entries.length > 0) {
+                result = result + " " + compileBlockStates(command.replaceBlockStates);
+            }
+        }
+
+        return result;
+    }
+
+    function compileClone(command: MCFunctionAST.CloneCommand): string {
+        let result =
+            "clone " +
+            compilePosition(command.begin) + " " +
+            compilePosition(command.end) + " " +
+            compilePosition(command.destination);
+
+        let hasMask = command.maskKind != undefined;
+        let hasMode = command.cloneMode != undefined;
+
+        if (!hasMask && !hasMode) {
+            return result;
+        }
+
+        let mask = command.maskKind;
+        if (mask == undefined) mask = MCFunctionAST.CloneMaskKind.Replace;
+        result = result + " " + compileCloneMask(mask);
+
+        if (mask == MCFunctionAST.CloneMaskKind.Filtered) {
+            let mode = command.cloneMode;
+            if (mode == undefined) mode = MCFunctionAST.CloneMode.Normal;
+            result = result + " " + compileCloneMode(mode);
+            result = result + " " + command.filterBlockId;
+
+            if (command.filterBlockStates && command.filterBlockStates.entries.length > 0) {
+                result = result + " " + compileBlockStates(command.filterBlockStates);
+            }
+
+            return result;
+        }
+
+        if (command.cloneMode != undefined) {
+            result = result + " " + compileCloneMode(command.cloneMode);
         }
 
         return result;

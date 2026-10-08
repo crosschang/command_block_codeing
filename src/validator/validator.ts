@@ -172,6 +172,190 @@ namespace MCFunctionValidator {
         return false;
     }
 
+    function hasControlCharacters(value: string): boolean {
+        if (value == undefined) return true;
+        for (let i = 0; i < value.length; i++) {
+            let ch = value.charAt(i);
+            if (ch == "\r" || ch == "\n" || ch == "\t") return true;
+        }
+        return false;
+    }
+
+    export function validateBlockStates(
+        states: MCFunctionAST.BlockStates
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        for (let i = 0; i < states.entries.length; i++) {
+            let entry = states.entries[i];
+
+            if (!isSafeIdToken(entry.key)) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "BLOCK_STATE_KEY_INVALID",
+                    "Block-state key is empty or contains invalid command characters."
+                );
+            }
+
+            for (let j = 0; j < i; j++) {
+                if (states.entries[j].key == entry.key) {
+                    addIssue(
+                        issues,
+                        ValidationLevel.Error,
+                        "BLOCK_STATE_KEY_DUPLICATE",
+                        "The same block-state key cannot be repeated."
+                    );
+                    break;
+                }
+            }
+
+            if (
+                entry.kind != MCFunctionAST.BlockStateValueKind.String &&
+                entry.kind != MCFunctionAST.BlockStateValueKind.Number &&
+                entry.kind != MCFunctionAST.BlockStateValueKind.Boolean
+            ) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "BLOCK_STATE_VALUE_KIND_INVALID",
+                    "Unsupported block-state value type."
+                );
+            }
+
+            if (
+                entry.kind == MCFunctionAST.BlockStateValueKind.String &&
+                hasControlCharacters(entry.stringValue)
+            ) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "BLOCK_STATE_STRING_INVALID",
+                    "Block-state text cannot contain tab or line-break characters."
+                );
+            }
+        }
+
+        return issues;
+    }
+
+    export function validateSetBlockCommand(
+        command: MCFunctionAST.SetBlockCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        appendIssues(issues, validatePosition(command.position));
+
+        if (!isSafeIdToken(command.blockId)) {
+            addIssue(issues, ValidationLevel.Error, "SETBLOCK_BLOCK_INVALID", "SETBLOCK block ID is invalid.");
+        }
+
+        if (command.blockStates) {
+            appendIssues(issues, validateBlockStates(command.blockStates));
+        }
+
+        if (
+            command.mode != undefined &&
+            command.mode != MCFunctionAST.SetBlockMode.Replace &&
+            command.mode != MCFunctionAST.SetBlockMode.Destroy &&
+            command.mode != MCFunctionAST.SetBlockMode.Keep
+        ) {
+            addIssue(issues, ValidationLevel.Error, "SETBLOCK_MODE_INVALID", "Unsupported SETBLOCK mode.");
+        }
+
+        return issues;
+    }
+
+    export function validateFillCommand(
+        command: MCFunctionAST.FillCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        appendIssues(issues, validatePosition(command.from));
+        appendIssues(issues, validatePosition(command.to));
+
+        if (!isSafeIdToken(command.blockId)) {
+            addIssue(issues, ValidationLevel.Error, "FILL_BLOCK_INVALID", "FILL block ID is invalid.");
+        }
+
+        if (command.blockStates) {
+            appendIssues(issues, validateBlockStates(command.blockStates));
+        }
+
+        if (
+            command.mode != undefined &&
+            command.mode != MCFunctionAST.FillMode.Replace &&
+            command.mode != MCFunctionAST.FillMode.Destroy &&
+            command.mode != MCFunctionAST.FillMode.Hollow &&
+            command.mode != MCFunctionAST.FillMode.Keep &&
+            command.mode != MCFunctionAST.FillMode.Outline
+        ) {
+            addIssue(issues, ValidationLevel.Error, "FILL_MODE_INVALID", "Unsupported FILL mode.");
+        }
+
+        if (command.replaceBlockId != undefined) {
+            if (!isSafeIdToken(command.replaceBlockId)) {
+                addIssue(issues, ValidationLevel.Error, "FILL_REPLACE_BLOCK_INVALID", "FILL replacement filter block ID is invalid.");
+            }
+
+            if (command.mode != undefined && command.mode != MCFunctionAST.FillMode.Replace) {
+                addIssue(issues, ValidationLevel.Error, "FILL_REPLACE_FILTER_MODE", "A replacement block filter is only valid with FILL replace mode.");
+            }
+        } else if (command.replaceBlockStates != undefined) {
+            addIssue(issues, ValidationLevel.Error, "FILL_REPLACE_STATES_WITHOUT_BLOCK", "Replacement block states require a replacement block ID.");
+        }
+
+        if (command.replaceBlockStates) {
+            appendIssues(issues, validateBlockStates(command.replaceBlockStates));
+        }
+
+        return issues;
+    }
+
+    export function validateCloneCommand(
+        command: MCFunctionAST.CloneCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        appendIssues(issues, validatePosition(command.begin));
+        appendIssues(issues, validatePosition(command.end));
+        appendIssues(issues, validatePosition(command.destination));
+
+        if (
+            command.maskKind != undefined &&
+            command.maskKind != MCFunctionAST.CloneMaskKind.Replace &&
+            command.maskKind != MCFunctionAST.CloneMaskKind.Masked &&
+            command.maskKind != MCFunctionAST.CloneMaskKind.Filtered
+        ) {
+            addIssue(issues, ValidationLevel.Error, "CLONE_MASK_INVALID", "Unsupported CLONE mask mode.");
+        }
+
+        if (
+            command.cloneMode != undefined &&
+            command.cloneMode != MCFunctionAST.CloneMode.Normal &&
+            command.cloneMode != MCFunctionAST.CloneMode.Force &&
+            command.cloneMode != MCFunctionAST.CloneMode.Move
+        ) {
+            addIssue(issues, ValidationLevel.Error, "CLONE_MODE_INVALID", "Unsupported CLONE mode.");
+        }
+
+        if (command.maskKind == MCFunctionAST.CloneMaskKind.Filtered) {
+            if (!isSafeIdToken(command.filterBlockId)) {
+                addIssue(issues, ValidationLevel.Error, "CLONE_FILTER_BLOCK_INVALID", "Filtered CLONE requires a valid filter block ID.");
+            }
+        } else {
+            if (command.filterBlockId != undefined || command.filterBlockStates != undefined) {
+                addIssue(issues, ValidationLevel.Error, "CLONE_FILTER_WITHOUT_FILTERED", "CLONE filter block/states are only valid with filtered mask mode.");
+            }
+        }
+
+        if (command.filterBlockStates) {
+            appendIssues(issues, validateBlockStates(command.filterBlockStates));
+        }
+
+        return issues;
+    }
+
     export function validateItemStack(item: MCFunctionAST.ItemStack): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
@@ -854,6 +1038,18 @@ namespace MCFunctionValidator {
 
         if (command.kind == MCFunctionAST.CommandKind.Clear) {
             appendIssues(issues, validateClearCommand(<MCFunctionAST.ClearCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.SetBlock) {
+            appendIssues(issues, validateSetBlockCommand(<MCFunctionAST.SetBlockCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Fill) {
+            appendIssues(issues, validateFillCommand(<MCFunctionAST.FillCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Clone) {
+            appendIssues(issues, validateCloneCommand(<MCFunctionAST.CloneCommand>command));
         }
 
         return issues;

@@ -14,7 +14,10 @@ namespace MCFunctionAST {
         Tag = 7,
         GameMode = 8,
         Kill = 9,
-        Clear = 10
+        Clear = 10,
+        SetBlock = 11,
+        Fill = 12,
+        Clone = 13
     }
 
     export interface CommandNode {

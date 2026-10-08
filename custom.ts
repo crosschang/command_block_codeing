@@ -10,7 +10,7 @@
  * emulates only the orientation while the exported command stays unchanged.
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
-//% groups='["TAG", "GAMEMODE", "KILL", "CLEAR", "SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
+//% groups='["SETBLOCK", "FILL", "CLONE", "TAG", "GAMEMODE", "KILL", "CLEAR", "SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
     function executeCommand(command: MCFunctionAST.CommandNode): void {
         if (!FunctionFile.allowCommandExecution()) {
@@ -919,6 +919,274 @@ namespace Command {
                 item ? item.itemId : undefined,
                 data ? data.data : undefined,
                 maxCount ? maxCount.maxCount : undefined
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // SETBLOCK
+    // ---------------------------------------------------------------------
+
+    /** Optional SETBLOCK old-block handling reporter. */
+    export class SetBlockModeValue {
+        mode: MCFunctionAST.SetBlockMode;
+
+        constructor(mode: MCFunctionAST.SetBlockMode) {
+            this.mode = mode;
+        }
+    }
+
+    //% blockId=mcfunction_setblock_mode
+    //% group="SETBLOCK" weight=99
+    //% block="mode $mode"
+    export function setBlockMode(
+        mode: MCFunctionAST.SetBlockMode
+    ): SetBlockModeValue {
+        return new SetBlockModeValue(mode);
+    }
+
+    /** Set one block using shared Position / Block / block-state values. */
+    //% blockId=command_setblock
+    //% group="SETBLOCK" weight=100
+    //% block="SETBLOCK position $position block $block || $states $mode"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% position.shadow="mcfunction_position_relative"
+    //% block.shadow="mcfunction_block_custom_id"
+    //% states.shadow="mcfunction_block_state_string"
+    //% mode.shadow="mcfunction_setblock_mode"
+    export function setblock(
+        position: MCFunctionPositionFields.PositionValue,
+        block: MCFunctionFields.BlockValue,
+        states?: MCFunctionBlockStateFields.BlockStatesValue,
+        mode?: SetBlockModeValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createSetBlockCommand(
+                position.position,
+                block.blockId,
+                states ? states.states : undefined,
+                mode ? mode.mode : undefined
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // FILL
+    // ---------------------------------------------------------------------
+
+    /** Optional FILL handling / replacement-filter reporter. */
+    export class FillHandlingValue {
+        mode: MCFunctionAST.FillMode;
+        replaceBlockId: string;
+        replaceBlockStates: MCFunctionAST.BlockStates;
+        hasReplaceBlock: boolean;
+        hasReplaceStates: boolean;
+
+        constructor(mode: MCFunctionAST.FillMode) {
+            this.mode = mode;
+            this.replaceBlockId = "";
+            this.replaceBlockStates = MCFunctionAST.createBlockStates();
+            this.hasReplaceBlock = false;
+            this.hasReplaceStates = false;
+        }
+    }
+
+    //% blockId=mcfunction_fill_replace
+    //% group="FILL" weight=99
+    //% block="replace all"
+    export function fillReplace(): FillHandlingValue {
+        return new FillHandlingValue(MCFunctionAST.FillMode.Replace);
+    }
+
+    //% blockId=mcfunction_fill_replace_only
+    //% group="FILL" weight=98
+    //% block="replace only block $block || states $states"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% block.shadow="mcfunction_block_custom_id"
+    //% states.shadow="mcfunction_block_state_string"
+    export function fillReplaceOnly(
+        block: MCFunctionFields.BlockValue,
+        states?: MCFunctionBlockStateFields.BlockStatesValue
+    ): FillHandlingValue {
+        let value = new FillHandlingValue(MCFunctionAST.FillMode.Replace);
+        value.replaceBlockId = block.blockId;
+        value.hasReplaceBlock = true;
+
+        if (states) {
+            value.replaceBlockStates = states.states;
+            value.hasReplaceStates = true;
+        }
+
+        return value;
+    }
+
+    //% blockId=mcfunction_fill_destroy
+    //% group="FILL" weight=97
+    //% block="destroy"
+    export function fillDestroy(): FillHandlingValue {
+        return new FillHandlingValue(MCFunctionAST.FillMode.Destroy);
+    }
+
+    //% blockId=mcfunction_fill_hollow
+    //% group="FILL" weight=96
+    //% block="hollow"
+    export function fillHollow(): FillHandlingValue {
+        return new FillHandlingValue(MCFunctionAST.FillMode.Hollow);
+    }
+
+    //% blockId=mcfunction_fill_keep
+    //% group="FILL" weight=95
+    //% block="keep"
+    export function fillKeep(): FillHandlingValue {
+        return new FillHandlingValue(MCFunctionAST.FillMode.Keep);
+    }
+
+    //% blockId=mcfunction_fill_outline
+    //% group="FILL" weight=94
+    //% block="outline"
+    export function fillOutline(): FillHandlingValue {
+        return new FillHandlingValue(MCFunctionAST.FillMode.Outline);
+    }
+
+    /** Fill a region with a block, optional block states, and fill handling. */
+    //% blockId=command_fill
+    //% group="FILL" weight=100
+    //% block="FILL from $from to $to block $block || $states $handling"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% from.shadow="mcfunction_position_relative"
+    //% to.shadow="mcfunction_position_relative"
+    //% block.shadow="mcfunction_block_custom_id"
+    //% states.shadow="mcfunction_block_state_string"
+    //% handling.shadow="mcfunction_fill_replace"
+    export function fill(
+        from: MCFunctionPositionFields.PositionValue,
+        to: MCFunctionPositionFields.PositionValue,
+        block: MCFunctionFields.BlockValue,
+        states?: MCFunctionBlockStateFields.BlockStatesValue,
+        handling?: FillHandlingValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createFillCommand(
+                from.position,
+                to.position,
+                block.blockId,
+                states ? states.states : undefined,
+                handling ? handling.mode : undefined,
+                handling && handling.hasReplaceBlock ? handling.replaceBlockId : undefined,
+                handling && handling.hasReplaceStates ? handling.replaceBlockStates : undefined
+            )
+        );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // CLONE
+    // ---------------------------------------------------------------------
+
+    /** Optional CLONE mask reporter. */
+    export class CloneMaskValue {
+        maskKind: MCFunctionAST.CloneMaskKind;
+        filterBlockId: string;
+        filterBlockStates: MCFunctionAST.BlockStates;
+        hasFilterBlock: boolean;
+        hasFilterStates: boolean;
+
+        constructor(maskKind: MCFunctionAST.CloneMaskKind) {
+            this.maskKind = maskKind;
+            this.filterBlockId = "";
+            this.filterBlockStates = MCFunctionAST.createBlockStates();
+            this.hasFilterBlock = false;
+            this.hasFilterStates = false;
+        }
+    }
+
+    /** Optional CLONE mode reporter. */
+    export class CloneModeValue {
+        mode: MCFunctionAST.CloneMode;
+
+        constructor(mode: MCFunctionAST.CloneMode) {
+            this.mode = mode;
+        }
+    }
+
+    //% blockId=mcfunction_clone_mask_replace
+    //% group="CLONE" weight=99
+    //% block="replace mask"
+    export function cloneReplaceMask(): CloneMaskValue {
+        return new CloneMaskValue(MCFunctionAST.CloneMaskKind.Replace);
+    }
+
+    //% blockId=mcfunction_clone_mask_masked
+    //% group="CLONE" weight=98
+    //% block="masked"
+    export function cloneMasked(): CloneMaskValue {
+        return new CloneMaskValue(MCFunctionAST.CloneMaskKind.Masked);
+    }
+
+    //% blockId=mcfunction_clone_mask_filtered
+    //% group="CLONE" weight=97
+    //% block="filtered block $block || states $states"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% block.shadow="mcfunction_block_custom_id"
+    //% states.shadow="mcfunction_block_state_string"
+    export function cloneFiltered(
+        block: MCFunctionFields.BlockValue,
+        states?: MCFunctionBlockStateFields.BlockStatesValue
+    ): CloneMaskValue {
+        let value = new CloneMaskValue(MCFunctionAST.CloneMaskKind.Filtered);
+        value.filterBlockId = block.blockId;
+        value.hasFilterBlock = true;
+
+        if (states) {
+            value.filterBlockStates = states.states;
+            value.hasFilterStates = true;
+        }
+
+        return value;
+    }
+
+    //% blockId=mcfunction_clone_mode
+    //% group="CLONE" weight=96
+    //% block="mode $mode"
+    export function cloneMode(
+        mode: MCFunctionAST.CloneMode
+    ): CloneModeValue {
+        return new CloneModeValue(mode);
+    }
+
+    /** Clone a region using optional mask/filter and clone mode reporters. */
+    //% blockId=command_clone
+    //% group="CLONE" weight=100
+    //% block="CLONE begin $begin end $end destination $destination || $mask $mode"
+    //% expandableArgumentMode="enabled"
+    //% inlineInputMode=external
+    //% begin.shadow="mcfunction_position_relative"
+    //% end.shadow="mcfunction_position_relative"
+    //% destination.shadow="mcfunction_position_relative"
+    //% mask.shadow="mcfunction_clone_mask_replace"
+    //% mode.shadow="mcfunction_clone_mode"
+    export function clone(
+        begin: MCFunctionPositionFields.PositionValue,
+        end: MCFunctionPositionFields.PositionValue,
+        destination: MCFunctionPositionFields.PositionValue,
+        mask?: CloneMaskValue,
+        mode?: CloneModeValue
+    ): void {
+        executeCommand(
+            MCFunctionBlocks.createCloneCommand(
+                begin.position,
+                end.position,
+                destination.position,
+                mask ? mask.maskKind : undefined,
+                mode ? mode.mode : undefined,
+                mask && mask.hasFilterBlock ? mask.filterBlockId : undefined,
+                mask && mask.hasFilterStates ? mask.filterBlockStates : undefined
             )
         );
     }

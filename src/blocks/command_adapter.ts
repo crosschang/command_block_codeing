@@ -232,4 +232,43 @@ namespace MCFunctionBlocks {
         );
     }
 
+    export function createSetBlockCommand(
+        position: MCFunctionAST.Position,
+        blockId: string,
+        blockStates?: MCFunctionAST.BlockStates,
+        mode?: MCFunctionAST.SetBlockMode
+    ): MCFunctionAST.SetBlockCommand {
+        return MCFunctionAST.createSetBlockCommand(
+            position, blockId, blockStates, mode
+        );
+    }
+
+    export function createFillCommand(
+        from: MCFunctionAST.Position,
+        to: MCFunctionAST.Position,
+        blockId: string,
+        blockStates?: MCFunctionAST.BlockStates,
+        mode?: MCFunctionAST.FillMode,
+        replaceBlockId?: string,
+        replaceBlockStates?: MCFunctionAST.BlockStates
+    ): MCFunctionAST.FillCommand {
+        return MCFunctionAST.createFillCommand(
+            from, to, blockId, blockStates, mode, replaceBlockId, replaceBlockStates
+        );
+    }
+
+    export function createCloneCommand(
+        begin: MCFunctionAST.Position,
+        end: MCFunctionAST.Position,
+        destination: MCFunctionAST.Position,
+        maskKind?: MCFunctionAST.CloneMaskKind,
+        cloneMode?: MCFunctionAST.CloneMode,
+        filterBlockId?: string,
+        filterBlockStates?: MCFunctionAST.BlockStates
+    ): MCFunctionAST.CloneCommand {
+        return MCFunctionAST.createCloneCommand(
+            begin, end, destination, maskKind, cloneMode, filterBlockId, filterBlockStates
+        );
+    }
+
 }
