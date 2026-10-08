@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.21",
+    "version": "0.0.22",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -67,9 +67,14 @@
         "docs/CHANGELOG_SUMMON_PREVIEW_2026-10-06.md",
         "docs/SUMMON_PREVIEW_TEST.md",
         "commands/effect.ts",
+        "commands/tag.ts",
+        "commands/gamemode.ts",
+        "commands/kill.ts",
+        "commands/clear.ts",
         "docs/EFFECT.md",
         "docs/CHANGELOG_EFFECT_2026-10-07.md",
-        "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md"
+        "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md",
+        "docs/CHANGELOG_DIRECT_COMMANDS_TAG_GAMEMODE_KILL_CLEAR_2026-10-08.md"
     ],
     "testFiles": [
         "test.ts"

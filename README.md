@@ -55,6 +55,11 @@ FunctionFile.define("main", function () {
 - `RAW COMMAND`
 - `TP` / `TELEPORT` (position / entity / rotation / facing position / facing entity)
 - `SUMMON` (SIMPLE / ADVANCED, Education-verified optional-slot serialization)
+- `EFFECT` (apply / infinite / clear)
+- `TAG` (add / remove / list)
+- `GAMEMODE`
+- `KILL`
+- `CLEAR`
 
 `RAW COMMAND`는 아직 구조화 블록으로 지원하지 않는 명령을 원문 그대로 AST에 보존하고 실행하기 위한 escape hatch입니다.
 

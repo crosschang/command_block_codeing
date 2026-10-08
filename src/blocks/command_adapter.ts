@@ -16,15 +16,16 @@ namespace MCFunctionBlocks {
     export function createGiveCommand(
         target: MCFunctionAST.Selector,
         itemId: string,
-        amount: number,
-        data: number
+        amount?: number,
+        data?: number,
+        components?: MCFunctionAST.ItemCommandComponents
     ): MCFunctionAST.GiveCommand {
-        return MCFunctionAST.createGiveCommand(
-            target,
-            MCFunctionAST.createItemStack(itemId, amount, data)
-        );
+        let item = MCFunctionAST.createItemStack(itemId, amount, data);
+        item.components = components;
+        return MCFunctionAST.createGiveCommand(target, item);
     }
 
+    // Compatibility helper for older call sites.
     export function createGiveCommandWithComponents(
         target: MCFunctionAST.Selector,
         itemId: string,
@@ -39,7 +40,6 @@ namespace MCFunctionBlocks {
             )
         );
     }
-
 
 
     export function createSummonSimpleCommand(
@@ -126,6 +126,27 @@ namespace MCFunctionBlocks {
     }
 
 
+    export function createTeleportCommand(
+        target: MCFunctionAST.Selector,
+        destination: MCFunctionAST.TeleportDestination,
+        orientation?: MCFunctionAST.TeleportOrientation,
+        checkForBlocks?: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportCommand(
+            target, destination, orientation, checkForBlocks
+        );
+    }
+
+    export function createTeleportSelfCommand(
+        destination: MCFunctionAST.TeleportDestination,
+        orientation?: MCFunctionAST.TeleportOrientation,
+        checkForBlocks?: boolean
+    ): MCFunctionAST.TeleportCommand {
+        return MCFunctionAST.createTeleportSelfCommand(
+            destination, orientation, checkForBlocks
+        );
+    }
+
     export function createTeleportToPositionCommand(
         target: MCFunctionAST.Selector,
         destination: MCFunctionAST.Position,
@@ -178,4 +199,37 @@ namespace MCFunctionBlocks {
             target, destination, facingEntity, checkForBlocks
         );
     }
+
+    export function createTagCommand(
+        target: MCFunctionAST.Selector,
+        action: MCFunctionAST.TagActionKind,
+        name?: string
+    ): MCFunctionAST.TagCommand {
+        return MCFunctionAST.createTagCommand(target, action, name);
+    }
+
+    export function createGameModeCommand(
+        gameMode: MCFunctionAST.GameMode,
+        target?: MCFunctionAST.Selector
+    ): MCFunctionAST.GameModeCommand {
+        return MCFunctionAST.createGameModeCommand(gameMode, target);
+    }
+
+    export function createKillCommand(
+        target?: MCFunctionAST.Selector
+    ): MCFunctionAST.KillCommand {
+        return MCFunctionAST.createKillCommand(target);
+    }
+
+    export function createClearCommand(
+        target?: MCFunctionAST.Selector,
+        itemId?: string,
+        data?: number,
+        maxCount?: number
+    ): MCFunctionAST.ClearCommand {
+        return MCFunctionAST.createClearCommand(
+            target, itemId, data, maxCount
+        );
+    }
+
 }
