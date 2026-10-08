@@ -23,6 +23,18 @@ namespace MCFunctionCompiler {
             case MCFunctionAST.CommandKind.Effect:
                 return compileEffect(<MCFunctionAST.EffectCommand>command);
 
+            case MCFunctionAST.CommandKind.Tag:
+                return compileTag(<MCFunctionAST.TagCommand>command);
+
+            case MCFunctionAST.CommandKind.GameMode:
+                return compileGameMode(<MCFunctionAST.GameModeCommand>command);
+
+            case MCFunctionAST.CommandKind.Kill:
+                return compileKill(<MCFunctionAST.KillCommand>command);
+
+            case MCFunctionAST.CommandKind.Clear:
+                return compileClear(<MCFunctionAST.ClearCommand>command);
+
             default:
                 return "";
         }
@@ -41,15 +53,106 @@ namespace MCFunctionCompiler {
     }
 
 
+    function compileTag(command: MCFunctionAST.TagCommand): string {
+        let result = "tag " + compileSelector(command.target) + " ";
+
+        if (command.action == MCFunctionAST.TagActionKind.List) {
+            return result + "list";
+        }
+
+        if (command.action == MCFunctionAST.TagActionKind.Add) {
+            return result + "add " + command.name;
+        }
+
+        return result + "remove " + command.name;
+    }
+
+    function compileGameMode(command: MCFunctionAST.GameModeCommand): string {
+        let result = "gamemode " + compileGameModeToken(command.gameMode);
+        if (command.target) {
+            result = result + " " + compileSelector(command.target);
+        }
+        return result;
+    }
+
+    function compileGameModeToken(gameMode: MCFunctionAST.GameMode): string {
+        if (gameMode == MCFunctionAST.GameMode.Creative) return "creative";
+        if (gameMode == MCFunctionAST.GameMode.Adventure) return "adventure";
+        if (gameMode == MCFunctionAST.GameMode.Spectator) return "spectator";
+        return "survival";
+    }
+
+    function compileKill(command: MCFunctionAST.KillCommand): string {
+        if (command.target) {
+            return "kill " + compileSelector(command.target);
+        }
+        return "kill";
+    }
+
+    function compileClear(command: MCFunctionAST.ClearCommand): string {
+        let result = "clear";
+
+        if (command.target) {
+            result = result + " " + compileSelector(command.target);
+        } else if (command.itemId != undefined) {
+            // Once a later optional slot is present, Bedrock needs the player
+            // position occupied. Preserve the UI meaning by targeting self.
+            result = result + " @s";
+        }
+
+        if (command.itemId == undefined) {
+            return result;
+        }
+
+        result = result + " " + command.itemId;
+
+        if (command.data == undefined && command.maxCount == undefined) {
+            return result;
+        }
+
+        let data = command.data;
+        if (data == undefined) data = -1;
+        result = result + " " + data;
+
+        if (command.maxCount != undefined) {
+            result = result + " " + command.maxCount;
+        }
+
+        return result;
+    }
+
     function compileGive(command: MCFunctionAST.GiveCommand): string {
         let result =
             "give " +
             compileSelector(command.target) +
-            " " + command.item.id +
-            " " + command.item.amount +
-            " " + command.item.data;
+            " " + command.item.id;
 
-        if (MCFunctionAST.hasItemCommandComponents(command.item.components)) {
+        let hasComponents = !!command.item.components &&
+            MCFunctionAST.hasItemCommandComponents(command.item.components);
+
+        // GIVE optional arguments are positional. Preserve omission when
+        // possible, and insert Bedrock defaults only when a later slot exists.
+        if (
+            command.item.amount == undefined &&
+            command.item.data == undefined &&
+            !hasComponents
+        ) {
+            return result;
+        }
+
+        let amount = command.item.amount;
+        if (amount == undefined) amount = 1;
+        result = result + " " + amount;
+
+        if (command.item.data == undefined && !hasComponents) {
+            return result;
+        }
+
+        let data = command.item.data;
+        if (data == undefined) data = 0;
+        result = result + " " + data;
+
+        if (hasComponents) {
             result = result + " " + compileItemCommandComponents(command.item.components);
         }
 
@@ -180,23 +283,36 @@ namespace MCFunctionCompiler {
     }
 
     function compileTeleport(command: MCFunctionAST.TeleportCommand): string {
-        let result = "tp " + compileSelector(command.target) + " ";
+        let result = "tp ";
 
-        if (command.mode == MCFunctionAST.TeleportMode.Entity) {
-            result = result + compileSelector(command.destinationEntity);
+        // Bedrock exposes two canonical TP families:
+        //   tp <destination>
+        //   tp <victim> <destination>
+        // Keep that distinction in the compiled command instead of forcing @s.
+        if (command.target) {
+            result = result + compileSelector(command.target) + " ";
+        }
+
+        if (command.destination.kind == MCFunctionAST.TeleportDestinationKind.Entity) {
+            result = result + compileSelector(command.destination.entity);
         } else {
-            result = result + compilePosition(command.destinationPosition);
+            result = result + compilePosition(command.destination.position);
 
-            if (command.mode == MCFunctionAST.TeleportMode.Rotation) {
-                result = result + " " + compileRotation(command.rotation);
-            } else if (command.mode == MCFunctionAST.TeleportMode.FacingPosition) {
-                result = result + " facing " + compilePosition(command.facingPosition);
-            } else if (command.mode == MCFunctionAST.TeleportMode.FacingEntity) {
-                result = result + " facing " + compileSelector(command.facingEntity);
+            if (command.orientation) {
+                if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.Rotation) {
+                    result = result + " " + compileRotation(command.orientation.rotation);
+                } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingPosition) {
+                    result = result + " facing " + compilePosition(command.orientation.facingPosition);
+                } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingEntity) {
+                    result = result + " facing " + compileSelector(command.orientation.facingEntity);
+                }
             }
         }
 
-        result = result + " " + (command.checkForBlocks ? "true" : "false");
+        if (command.checkForBlocks != undefined) {
+            result = result + " " + (command.checkForBlocks ? "true" : "false");
+        }
+
         return result;
     }
 

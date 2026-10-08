@@ -184,14 +184,20 @@ namespace MCFunctionValidator {
             );
         }
 
-        if (!isIntegerValue(item.amount)) {
-            addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NOT_INTEGER", "Item amount must be an integer.");
-        } else if (item.amount <= 0) {
-            addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NON_POSITIVE", "Item amount must be at least 1.");
+        if (item.amount != undefined) {
+            if (!isIntegerValue(item.amount)) {
+                addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NOT_INTEGER", "Item amount must be an integer.");
+            } else if (item.amount <= 0) {
+                addIssue(issues, ValidationLevel.Error, "ITEM_AMOUNT_NON_POSITIVE", "Item amount must be at least 1.");
+            }
         }
 
-        if (!isIntegerValue(item.data)) {
+        if (item.data != undefined && !isIntegerValue(item.data)) {
             addIssue(issues, ValidationLevel.Error, "ITEM_DATA_NOT_INTEGER", "Item data must be an integer.");
+        }
+
+        if (!item.components) {
+            return issues;
         }
 
         for (let i = 0; i < item.components.canDestroy.length; i++) {
@@ -444,44 +450,71 @@ namespace MCFunctionValidator {
     ): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
-        appendIssues(issues, validateSelector(command.target));
+        // target is optional: omitted target is the Bedrock `tp <destination>`
+        // self-teleport form. Validate only when an explicit victim exists.
+        if (command.target) {
+            appendIssues(issues, validateSelector(command.target));
+        }
 
-        if (command.mode == MCFunctionAST.TeleportMode.Entity) {
-            if (!command.destinationEntity) {
+        if (!command.destination) {
+            addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_MISSING", "Teleport destination is missing.");
+            return issues;
+        }
+
+        if (command.destination.kind == MCFunctionAST.TeleportDestinationKind.Entity) {
+            if (!command.destination.entity) {
                 addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_ENTITY_MISSING", "Teleport destination entity is missing.");
             } else {
-                appendIssues(issues, validateSelector(command.destinationEntity));
+                appendIssues(issues, validateSelector(command.destination.entity));
+            }
+
+            if (command.orientation) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "TP_ENTITY_DESTINATION_HAS_ORIENTATION",
+                    "Teleport orientation is only valid with a position destination."
+                );
             }
             return issues;
         }
 
-        if (!command.destinationPosition) {
+        if (command.destination.kind != MCFunctionAST.TeleportDestinationKind.Position) {
+            addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_KIND_INVALID", "Unsupported teleport destination kind.");
+            return issues;
+        }
+
+        if (!command.destination.position) {
             addIssue(issues, ValidationLevel.Error, "TP_DESTINATION_POSITION_MISSING", "Teleport destination position is missing.");
             return issues;
         }
 
-        appendIssues(issues, validatePosition(command.destinationPosition));
+        appendIssues(issues, validatePosition(command.destination.position));
 
-        if (command.mode == MCFunctionAST.TeleportMode.Rotation) {
-            if (!command.rotation) {
+        if (!command.orientation) {
+            return issues;
+        }
+
+        if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.Rotation) {
+            if (!command.orientation.rotation) {
                 addIssue(issues, ValidationLevel.Error, "TP_ROTATION_MISSING", "Teleport rotation is missing.");
             } else {
-                appendIssues(issues, validateRotation(command.rotation));
+                appendIssues(issues, validateRotation(command.orientation.rotation));
             }
-        } else if (command.mode == MCFunctionAST.TeleportMode.FacingPosition) {
-            if (!command.facingPosition) {
+        } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingPosition) {
+            if (!command.orientation.facingPosition) {
                 addIssue(issues, ValidationLevel.Error, "TP_FACING_POSITION_MISSING", "Teleport facing position is missing.");
             } else {
-                appendIssues(issues, validatePosition(command.facingPosition));
+                appendIssues(issues, validatePosition(command.orientation.facingPosition));
             }
-        } else if (command.mode == MCFunctionAST.TeleportMode.FacingEntity) {
-            if (!command.facingEntity) {
+        } else if (command.orientation.kind == MCFunctionAST.TeleportOrientationKind.FacingEntity) {
+            if (!command.orientation.facingEntity) {
                 addIssue(issues, ValidationLevel.Error, "TP_FACING_ENTITY_MISSING", "Teleport facing entity is missing.");
             } else {
-                appendIssues(issues, validateSelector(command.facingEntity));
+                appendIssues(issues, validateSelector(command.orientation.facingEntity));
             }
-        } else if (command.mode != MCFunctionAST.TeleportMode.Position) {
-            addIssue(issues, ValidationLevel.Error, "TP_MODE_INVALID", "Unsupported teleport mode.");
+        } else {
+            addIssue(issues, ValidationLevel.Error, "TP_ORIENTATION_KIND_INVALID", "Unsupported teleport orientation kind.");
         }
 
         return issues;
@@ -639,6 +672,134 @@ namespace MCFunctionValidator {
     }
 
 
+    export function validateTagCommand(
+        command: MCFunctionAST.TagCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+        appendIssues(issues, validateSelector(command.target));
+
+        if (command.action == MCFunctionAST.TagActionKind.List) {
+            if (command.name != undefined && command.name.length > 0) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "TAG_LIST_HAS_NAME",
+                    "TAG list does not accept a tag name."
+                );
+            }
+            return issues;
+        }
+
+        if (
+            command.action != MCFunctionAST.TagActionKind.Add &&
+            command.action != MCFunctionAST.TagActionKind.Remove
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "TAG_ACTION_INVALID",
+                "Unsupported TAG action."
+            );
+            return issues;
+        }
+
+        if (!isSafeIdToken(command.name)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "TAG_NAME_INVALID",
+                "Tag name is empty or contains invalid command characters."
+            );
+        }
+
+        return issues;
+    }
+
+    export function validateGameModeCommand(
+        command: MCFunctionAST.GameModeCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        if (
+            command.gameMode != MCFunctionAST.GameMode.Survival &&
+            command.gameMode != MCFunctionAST.GameMode.Creative &&
+            command.gameMode != MCFunctionAST.GameMode.Adventure &&
+            command.gameMode != MCFunctionAST.GameMode.Spectator
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "GAMEMODE_INVALID",
+                "Unsupported game mode."
+            );
+        }
+
+        if (command.target) {
+            appendIssues(issues, validateSelector(command.target));
+        }
+
+        return issues;
+    }
+
+    export function validateKillCommand(
+        command: MCFunctionAST.KillCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+        if (command.target) {
+            appendIssues(issues, validateSelector(command.target));
+        }
+        return issues;
+    }
+
+    export function validateClearCommand(
+        command: MCFunctionAST.ClearCommand
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        if (command.target) {
+            appendIssues(issues, validateSelector(command.target));
+        }
+
+        if (command.itemId != undefined) {
+            if (!isSafeIdToken(command.itemId)) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "CLEAR_ITEM_ID_INVALID",
+                    "CLEAR item ID is empty or contains invalid command characters."
+                );
+            }
+        } else if (command.data != undefined || command.maxCount != undefined) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "CLEAR_ITEM_REQUIRED",
+                "CLEAR item must be present before data or max count."
+            );
+        }
+
+        if (command.data != undefined && !isIntegerValue(command.data)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "CLEAR_DATA_NOT_INTEGER",
+                "CLEAR data must be an integer."
+            );
+        }
+
+        if (command.maxCount != undefined && !isIntegerValue(command.maxCount)) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "CLEAR_MAX_COUNT_NOT_INTEGER",
+                "CLEAR max count must be an integer."
+            );
+        }
+
+        return issues;
+    }
+
+
     export function validateCommand(command: MCFunctionAST.CommandNode): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
 
@@ -677,6 +838,22 @@ namespace MCFunctionValidator {
 
         if (command.kind == MCFunctionAST.CommandKind.Effect) {
             appendIssues(issues, validateEffectCommand(<MCFunctionAST.EffectCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Tag) {
+            appendIssues(issues, validateTagCommand(<MCFunctionAST.TagCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.GameMode) {
+            appendIssues(issues, validateGameModeCommand(<MCFunctionAST.GameModeCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Kill) {
+            appendIssues(issues, validateKillCommand(<MCFunctionAST.KillCommand>command));
+        }
+
+        if (command.kind == MCFunctionAST.CommandKind.Clear) {
+            appendIssues(issues, validateClearCommand(<MCFunctionAST.ClearCommand>command));
         }
 
         return issues;

@@ -27,6 +27,10 @@ namespace MCFunctionFields {
         Family = 2
     }
 
+    // Backward-compatible Selector UI enum.
+    // Keep literal numeric values aligned with MCFunctionAST.GameMode.
+    // Do not initialize enum members from another enum: MakeCode/PXT treats
+    // those as a different enum type and reports an assignment error.
     export enum SelectorGameMode {
         //% block="survival"
         Survival = 0,
@@ -315,11 +319,10 @@ namespace MCFunctionFields {
     //% block="type $entity|exclude $exclude|next $next"
     //% inlineInputMode=external
     //% entity.shadow="mcfunction_entity_select"
-    //% exclude.defl=false
     //% next.shadow="mcfunction_selector_no_condition"
     export function addEntityTypeCondition(
         entity: EntityValue,
-        exclude: boolean,
+        exclude: BooleanLiteral,
         next: SelectorConditionValue
     ): SelectorConditionValue {
 
@@ -332,7 +335,7 @@ namespace MCFunctionFields {
             MCFunctionAST.createSelectorFilter(
                 "type",
                 entity.entityId,
-                exclude
+                booleanLiteralValue(exclude)
             )
         );
 
@@ -344,12 +347,11 @@ namespace MCFunctionFields {
     //% block="$conditionType value $value|exclude $exclude|next $next"
     //% inlineInputMode=external
     //% value.defl="Boss"
-    //% exclude.defl=false
     //% next.shadow="mcfunction_selector_no_condition"
     export function addTextCondition(
         conditionType: SelectorTextConditionType,
         value: string,
-        exclude: boolean,
+        exclude: BooleanLiteral,
         next: SelectorConditionValue
     ): SelectorConditionValue {
 
@@ -379,7 +381,7 @@ namespace MCFunctionFields {
             MCFunctionAST.createSelectorFilter(
                 key,
                 value,
-                exclude
+                booleanLiteralValue(exclude)
             )
         );
 
@@ -390,11 +392,10 @@ namespace MCFunctionFields {
     //% blockId=mcfunction_selector_gamemode_condition
     //% block="gamemode $mode|exclude $exclude|next $next"
     //% inlineInputMode=external
-    //% exclude.defl=false
     //% next.shadow="mcfunction_selector_no_condition"
     export function addGameModeCondition(
         mode: SelectorGameMode,
-        exclude: boolean,
+        exclude: BooleanLiteral,
         next: SelectorConditionValue
     ): SelectorConditionValue {
 
@@ -407,7 +408,7 @@ namespace MCFunctionFields {
             MCFunctionAST.createSelectorFilter(
                 "m",
                 selectorGameModeToken(mode),
-                exclude
+                booleanLiteralValue(exclude)
             )
         );
 

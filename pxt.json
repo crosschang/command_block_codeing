@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.21",
+    "version": "0.0.24",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -47,6 +47,11 @@
         "src/blocks/command_adapter.ts",
         "src/compiler/compiler.ts",
         "src/validator/validator.ts",
+        "src/preview/query_result.ts",
+        "src/preview/internal_tag.ts",
+        "src/preview/world_state.ts",
+        "src/preview/output_adapter.ts",
+        "src/preview/query_adapter.ts",
         "src/preview/summon_preview.ts",
         "item_components.ts",
         "custom.ts",
@@ -67,9 +72,16 @@
         "docs/CHANGELOG_SUMMON_PREVIEW_2026-10-06.md",
         "docs/SUMMON_PREVIEW_TEST.md",
         "commands/effect.ts",
+        "commands/tag.ts",
+        "commands/gamemode.ts",
+        "commands/kill.ts",
+        "commands/clear.ts",
         "docs/EFFECT.md",
         "docs/CHANGELOG_EFFECT_2026-10-07.md",
-        "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md"
+        "docs/CHANGELOG_EFFECT_UNIFIED_2026-10-07.md",
+        "docs/CHANGELOG_DIRECT_COMMANDS_TAG_GAMEMODE_KILL_CLEAR_2026-10-08.md",
+        "docs/CHANGELOG_PREVIEW_QUERY_ADAPTER_2026-10-08.md",
+        "docs/CHANGELOG_PREVIEW_INTERNAL_TAGS_2026-10-08.md"
     ],
     "testFiles": [
         "test.ts"

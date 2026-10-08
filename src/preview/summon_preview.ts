@@ -19,8 +19,6 @@
  * Exported .mcfunction output is NOT changed by this adapter.
  */
 namespace MCFunctionPreview {
-    let summonPreviewSerial = 0;
-
     /** Execute SUMMON in MakeCode runtime preview without changing export meaning. */
     export function executeSummon(command: MCFunctionAST.SummonCommand): void {
         if (!FunctionFile.allowCommandExecution()) {
@@ -59,9 +57,9 @@ namespace MCFunctionPreview {
     function executeAdvancedOrientationEmulation(
         command: MCFunctionAST.SummonCommand
     ): void {
-        let previewId = nextPreviewId();
-        let oldTag = "cbc_p_old_" + previewId;
-        let newTag = "cbc_p_new_" + previewId;
+        let scopeToken = createInternalTagScopeToken();
+        let oldTag = createInternalTagName("so", scopeToken);
+        let newTag = createInternalTagName("sn", scopeToken);
 
         let oldEntities = createEntityTypeSelector(command.entityId);
         let newCandidate = createEntityTypeSelector(command.entityId);
@@ -113,14 +111,10 @@ namespace MCFunctionPreview {
 
         applyOrientationWithTeleport(command, previewTarget);
 
-        // Always clean preview tags. Tag-only selectors avoid depending on the
-        // entity retaining its original type after a spawn event.
-        executePreviewRaw(
-            "tag " + compileTagOnlySelector(oldTag) + " remove " + oldTag
-        );
-        executePreviewRaw(
-            "tag " + compileTagOnlySelector(newTag) + " remove " + newTag
-        );
+        // Always clean Preview-only tags through the shared internal-tag layer.
+        // Cleanup does not depend on the entity retaining its original type.
+        cleanupInternalTag(oldTag);
+        cleanupInternalTag(newTag);
     }
 
     function applyOrientationWithTeleport(
@@ -175,20 +169,6 @@ namespace MCFunctionPreview {
             MCFunctionAST.createSelectorFilter("type", entityId, false)
         );
         return selector;
-    }
-
-    function compileTagOnlySelector(tag: string): string {
-        let selector = MCFunctionAST.createSelector(MCFunctionAST.SelectorBase.AllEntities);
-        MCFunctionAST.addSelectorFilter(
-            selector,
-            MCFunctionAST.createSelectorFilter("tag", tag, false)
-        );
-        return MCFunctionCompiler.compileSelector(selector);
-    }
-
-    function nextPreviewId(): number {
-        summonPreviewSerial++;
-        return summonPreviewSerial;
     }
 
     function executeCompiled(command: MCFunctionAST.CommandNode): void {
