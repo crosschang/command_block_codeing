@@ -207,7 +207,7 @@ namespace FunctionFile {
         }
 
         for (let i = 0; i < issues.length; i++) {
-            definitionIssues.push(issues[i]);
+            addDefinitionIssueUnique(issues[i]);
         }
 
         if (!MCFunctionValidator.hasError(issues)) {
@@ -222,7 +222,28 @@ namespace FunctionFile {
         return collectingTickValues;
     }
 
+    function addDefinitionIssueUnique(
+        issue: MCFunctionValidator.ValidationIssue
+    ): void {
+        for (let i = 0; i < definitionIssues.length; i++) {
+            let current = definitionIssues[i];
+            if (
+                current.level == issue.level &&
+                current.code == issue.code &&
+                current.message == issue.message
+            ) {
+                return;
+            }
+        }
+
+        definitionIssues.push(issue);
+    }
+
     function prepareDefinition(name: string, handler: () => void): void {
+        MCFunctionPreview.previewSay(
+            "Checking mcfunction " + name + " for problems."
+        );
+
         // Save/restore capture state defensively. Nested FunctionFile.define() is
         // rejected above, but this keeps the internal gate deterministic if the
         // implementation is reused later by another project-level validation pass.
@@ -254,6 +275,7 @@ namespace FunctionFile {
         register(name, preparedHandler, valid);
 
         reportDefinitionIssues(name, issues, structureError);
+        reportDefinitionComplete(name, issues, structureError);
 
         if (!valid) {
             return;
@@ -300,6 +322,50 @@ namespace FunctionFile {
                 );
             }
         }
+    }
+
+    function countDefinitionIssues(
+        issues: MCFunctionValidator.ValidationIssue[],
+        level: MCFunctionValidator.ValidationLevel
+    ): number {
+        let count = 0;
+        for (let i = 0; i < issues.length; i++) {
+            if (issues[i].level == level) count++;
+        }
+        return count;
+    }
+
+    function reportDefinitionComplete(
+        name: string,
+        issues: MCFunctionValidator.ValidationIssue[],
+        structureError: boolean
+    ): void {
+        let errorCount = countDefinitionIssues(
+            issues,
+            MCFunctionValidator.ValidationLevel.Error
+        );
+        let warningCount = countDefinitionIssues(
+            issues,
+            MCFunctionValidator.ValidationLevel.Warning
+        );
+        let infoCount = countDefinitionIssues(
+            issues,
+            MCFunctionValidator.ValidationLevel.Info
+        );
+
+        if (structureError) errorCount++;
+
+        if (errorCount == 0 && warningCount == 0 && infoCount == 0) {
+            MCFunctionPreview.previewSay(
+                "mcfunction " + name + " check complete. No problems found."
+            );
+            return;
+        }
+
+        MCFunctionPreview.previewSay(
+            "mcfunction " + name + " check complete. errors " + errorCount +
+            " warnings " + warningCount + " info " + infoCount + "."
+        );
     }
 
     function startTickPreview(): void {

@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -49,6 +49,7 @@
         "commands/teleport.ts",
         "src/blocks/command_adapter.ts",
         "src/compiler/compiler.ts",
+        "src/registry/registry_lookup.generated.ts",
         "src/validator/validator.ts",
         "src/preview/query_result.ts",
         "src/preview/internal_tag.ts",
@@ -92,7 +93,8 @@
         "docs/CHANGELOG_PREVIEW_OUTPUT_RAWTEXT_2026-10-08.md",
         "docs/CHANGELOG_VALIDATION_ORIENTATION_BLOCKSTATE_LIBRARY_2026-10-08.md",
         "docs/CHANGELOG_DEFINITION_VALIDATION_GATE_2026-10-09.md",
-        "docs/CHANGELOG_BLOCKSTATE_SERIALIZATION_2026-10-09.md"
+        "docs/CHANGELOG_BLOCKSTATE_SERIALIZATION_2026-10-09.md",
+        "docs/CHANGELOG_VALIDATION_REGISTRY_UX_2026-10-09.md"
     ],
     "testFiles": [
         "test.ts"

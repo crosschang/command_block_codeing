@@ -143,6 +143,36 @@ namespace MCFunctionValidator {
             );
         }
 
+        for (let i = 0; i < selector.filters.length; i++) {
+            if (selector.filters[i].key == "type") {
+                let entityId = selector.filters[i].value;
+                if (!isSafeIdToken(entityId)) {
+                    addIssue(
+                        issues,
+                        ValidationLevel.Error,
+                        "SELECTOR_TYPE_ID_INVALID",
+                        "Selector type entity ID is empty or contains invalid command characters."
+                    );
+                } else {
+                    validateEntityRegistryId(entityId, issues);
+                }
+            }
+        }
+
+        for (let i = 0; i < selector.hasItems.length; i++) {
+            let itemId = selector.hasItems[i].itemId;
+            if (!isSafeIdToken(itemId)) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "SELECTOR_HASITEM_ID_INVALID",
+                    "Selector hasitem item ID is empty or contains invalid command characters."
+                );
+            } else {
+                validateItemRegistryId(itemId, issues);
+            }
+        }
+
         return issues;
     }
 
@@ -179,6 +209,84 @@ namespace MCFunctionValidator {
             if (ch == "\r" || ch == "\n" || ch == "\t") return true;
         }
         return false;
+    }
+
+    function validateBlockRegistryId(
+        blockId: string,
+        issues: ValidationIssue[]
+    ): void {
+        if (!isSafeIdToken(blockId)) return;
+
+        if (MCFunctionRegistryLookup.isCustomNamespace(blockId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Info,
+                "BLOCK_ID_CUSTOM_NAMESPACE",
+                "Block ID " + blockId + " uses a custom namespace and is not checked against the vanilla Registry."
+            );
+            return;
+        }
+
+        if (!MCFunctionRegistryLookup.isKnownBlock(blockId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Warning,
+                "BLOCK_ID_UNKNOWN",
+                "Block ID " + blockId + " is not present in the current Bedrock Registry. Preview and export will continue."
+            );
+        }
+    }
+
+    function validateEntityRegistryId(
+        entityId: string,
+        issues: ValidationIssue[]
+    ): void {
+        if (!isSafeIdToken(entityId)) return;
+
+        if (MCFunctionRegistryLookup.isCustomNamespace(entityId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Info,
+                "ENTITY_ID_CUSTOM_NAMESPACE",
+                "Entity ID " + entityId + " uses a custom namespace and is not checked against the vanilla Registry."
+            );
+            return;
+        }
+
+        if (!MCFunctionRegistryLookup.isKnownEntity(entityId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Warning,
+                "ENTITY_ID_UNKNOWN",
+                "Entity ID " + entityId + " is not present in the current Bedrock Registry. Preview and export will continue."
+            );
+        }
+    }
+
+    function validateItemRegistryId(
+        itemId: string,
+        issues: ValidationIssue[]
+    ): void {
+        if (!isSafeIdToken(itemId)) return;
+
+        if (MCFunctionRegistryLookup.isCustomNamespace(itemId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Info,
+                "ITEM_ID_CUSTOM_NAMESPACE",
+                "Item ID " + itemId + " uses a custom namespace and is not checked against the vanilla Registry."
+            );
+            return;
+        }
+
+        if (!MCFunctionRegistryLookup.isKnownItem(itemId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Warning,
+                "ITEM_ID_UNKNOWN",
+                "Item ID " + itemId + " is not present in the current Bedrock Registry. Preview and export will continue."
+            );
+        }
     }
 
     export function validateBlockStates(
@@ -248,6 +356,8 @@ namespace MCFunctionValidator {
 
         if (!isSafeIdToken(command.blockId)) {
             addIssue(issues, ValidationLevel.Error, "SETBLOCK_BLOCK_INVALID", "SETBLOCK block ID is invalid.");
+        } else {
+            validateBlockRegistryId(command.blockId, issues);
         }
 
         if (command.blockStates) {
@@ -276,6 +386,8 @@ namespace MCFunctionValidator {
 
         if (!isSafeIdToken(command.blockId)) {
             addIssue(issues, ValidationLevel.Error, "FILL_BLOCK_INVALID", "FILL block ID is invalid.");
+        } else {
+            validateBlockRegistryId(command.blockId, issues);
         }
 
         if (command.blockStates) {
@@ -296,6 +408,8 @@ namespace MCFunctionValidator {
         if (command.replaceBlockId != undefined) {
             if (!isSafeIdToken(command.replaceBlockId)) {
                 addIssue(issues, ValidationLevel.Error, "FILL_REPLACE_BLOCK_INVALID", "FILL replacement filter block ID is invalid.");
+            } else {
+                validateBlockRegistryId(command.replaceBlockId, issues);
             }
 
             if (command.mode != undefined && command.mode != MCFunctionAST.FillMode.Replace) {
@@ -342,6 +456,8 @@ namespace MCFunctionValidator {
         if (command.maskKind == MCFunctionAST.CloneMaskKind.Filtered) {
             if (!isSafeIdToken(command.filterBlockId)) {
                 addIssue(issues, ValidationLevel.Error, "CLONE_FILTER_BLOCK_INVALID", "Filtered CLONE requires a valid filter block ID.");
+            } else {
+                validateBlockRegistryId(command.filterBlockId, issues);
             }
         } else {
             if (command.filterBlockId != undefined || command.filterBlockStates != undefined) {
@@ -366,6 +482,8 @@ namespace MCFunctionValidator {
                 "ITEM_ID_INVALID",
                 "Item ID is empty or contains characters that cannot be used in a command."
             );
+        } else {
+            validateItemRegistryId(item.id, issues);
         }
 
         if (item.amount != undefined) {
@@ -388,6 +506,8 @@ namespace MCFunctionValidator {
             let blockId = item.components.canDestroy[i];
             if (!isSafeIdToken(blockId)) {
                 addIssue(issues, ValidationLevel.Error, "ITEM_CAN_DESTROY_ID_INVALID", "Invalid can_destroy block ID: " + blockId);
+            } else {
+                validateBlockRegistryId(blockId, issues);
             }
             if (containsString(item.components.canDestroy, blockId, i)) {
                 addIssue(issues, ValidationLevel.Warning, "ITEM_CAN_DESTROY_DUPLICATE", "Duplicate can_destroy block: " + blockId);
@@ -398,6 +518,8 @@ namespace MCFunctionValidator {
             let blockId = item.components.canPlaceOn[i];
             if (!isSafeIdToken(blockId)) {
                 addIssue(issues, ValidationLevel.Error, "ITEM_CAN_PLACE_ON_ID_INVALID", "Invalid can_place_on block ID: " + blockId);
+            } else {
+                validateBlockRegistryId(blockId, issues);
             }
             if (containsString(item.components.canPlaceOn, blockId, i)) {
                 addIssue(issues, ValidationLevel.Warning, "ITEM_CAN_PLACE_ON_DUPLICATE", "Duplicate can_place_on block: " + blockId);
@@ -812,6 +934,8 @@ namespace MCFunctionValidator {
                 "SUMMON_ENTITY_ID_INVALID",
                 "Summon entity ID is empty or contains invalid command characters."
             );
+        } else {
+            validateEntityRegistryId(command.entityId, issues);
         }
 
         if (command.nameTag && hasControlCharacter(command.nameTag)) {
@@ -962,6 +1086,8 @@ namespace MCFunctionValidator {
                     "CLEAR_ITEM_ID_INVALID",
                     "CLEAR item ID is empty or contains invalid command characters."
                 );
+            } else {
+                validateItemRegistryId(command.itemId, issues);
             }
         } else if (command.data != undefined || command.maxCount != undefined) {
             addIssue(

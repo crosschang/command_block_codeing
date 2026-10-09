@@ -6,7 +6,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$GeneratorVersion = '12.4.1'
+$GeneratorVersion = '12.5.0'
 if ($ExpectedVersion -and $ExpectedVersion -ne $GeneratorVersion) {
     throw "Registry generator version mismatch. Expected $ExpectedVersion but found $GeneratorVersion."
 }
@@ -219,6 +219,92 @@ function Generate-FlatLibrary($Spec) {
     return (($Lines -join "`n") + "`n")
 }
 
+function Generate-RegistryLookup() {
+    $Lines = New-Object 'System.Collections.Generic.List[string]'
+    @(
+        '/**',
+        ' * AUTO-GENERATED FILE. DO NOT EDIT BY HAND.',
+        ' *',
+        ' * Sources:',
+        ' * - registry/source/bedrock/blocks.json',
+        ' * - registry/source/bedrock/entities.json',
+        ' * - registry/source/bedrock/items.json',
+        ' * Generator: tools/generate_registry.ps1',
+        ' *',
+        ' * Hidden runtime lookup used only by Definition Validation.',
+        ' * Registry misses never change command meaning by themselves.',
+        ' */',
+        '',
+        'namespace MCFunctionRegistryLookup {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    $LookupKinds = @(
+        [ordered]@{ Kind='blocks'; Name='knownBlockIds' },
+        [ordered]@{ Kind='entities'; Name='knownEntityIds' },
+        [ordered]@{ Kind='items'; Name='knownItemIds' }
+    )
+
+    foreach ($Lookup in $LookupKinds) {
+        $Spec = $FlatSpecs | Where-Object { $_.Kind -eq $Lookup.Kind } | Select-Object -First 1
+        if (-not $Spec) { throw "Missing flat registry spec for $($Lookup.Kind)" }
+        $Entries = @(Read-FlatRegistryEntries $Spec | Sort-Object { [string]$_.id })
+
+        [void]$Lines.Add('    let ' + $Lookup.Name + ': string[] = [')
+        foreach ($Entry in $Entries) {
+            [void]$Lines.Add('        ' + (Quote-JsString ([string]$Entry.id)) + ',')
+        }
+        [void]$Lines.Add('    ];')
+        [void]$Lines.Add('')
+    }
+
+    @(
+        '    function normalizeVanillaId(value: string): string {',
+        '        if (!value) return value;',
+        '        if (value.indexOf(":") < 0) return "minecraft:" + value;',
+        '        return value;',
+        '    }',
+        '',
+        '    function containsSorted(values: string[], value: string): boolean {',
+        '        let low = 0;',
+        '        let high = values.length - 1;',
+        '',
+        '        while (low <= high) {',
+        '            let middle = Math.floor((low + high) / 2);',
+        '            let current = values[middle];',
+        '',
+        '            if (current == value) return true;',
+        '            if (current < value) low = middle + 1;',
+        '            else high = middle - 1;',
+        '        }',
+        '',
+        '        return false;',
+        '    }',
+        '',
+        '    export function isCustomNamespace(value: string): boolean {',
+        '        if (!value) return false;',
+        '        let separator = value.indexOf(":");',
+        '        if (separator <= 0) return false;',
+        '        return value.substring(0, separator) != "minecraft";',
+        '    }',
+        '',
+        '    export function isKnownBlock(value: string): boolean {',
+        '        return containsSorted(knownBlockIds, normalizeVanillaId(value));',
+        '    }',
+        '',
+        '    export function isKnownEntity(value: string): boolean {',
+        '        return containsSorted(knownEntityIds, normalizeVanillaId(value));',
+        '    }',
+        '',
+        '    export function isKnownItem(value: string): boolean {',
+        '        return containsSorted(knownItemIds, normalizeVanillaId(value));',
+        '    }',
+        '}',
+        ''
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    return (($Lines -join "`n") + "`n")
+}
+
 function Generate-GroupedEventLibrary(
     [string]$Kind,
     [string]$Namespace,
@@ -343,6 +429,16 @@ foreach ($Spec in $FlatSpecs) {
         if (-not $Check) { [System.IO.File]::WriteAllText($OutPath, $Expected, $Utf8NoBom) }
     }
     $Counts[$Spec.Kind] = @(Read-FlatRegistryEntries $Spec).Count
+}
+
+$LookupOutDir = Join-Path $Root 'src\registry'
+if (-not (Test-Path $LookupOutDir)) { New-Item -ItemType Directory -Force -Path $LookupOutDir | Out-Null }
+$LookupOutPath = Join-Path $LookupOutDir 'registry_lookup.generated.ts'
+$LookupExpected = Generate-RegistryLookup
+$LookupActual = if (Test-Path $LookupOutPath) { [System.IO.File]::ReadAllText($LookupOutPath) } else { $null }
+if ($LookupActual -ne $LookupExpected) {
+    [void]$Changed.Add($LookupOutPath.Substring($Root.Length + 1))
+    if (-not $Check) { [System.IO.File]::WriteAllText($LookupOutPath, $LookupExpected, $Utf8NoBom) }
 }
 
 $GroupedSpecs = @(
