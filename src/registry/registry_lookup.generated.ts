@@ -2981,7 +2981,7 @@ namespace MCFunctionRegistryLookup {
         if (!value) return false;
         let separator = value.indexOf(":");
         if (separator <= 0) return false;
-        return value.indexOf("minecraft:") != 0;
+        return value.substring(0, separator) != "minecraft";
     }
 
     export function isKnownBlock(value: string): boolean {
