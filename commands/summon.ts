@@ -3,7 +3,7 @@
  *
  * Canonical project model uses two forms:
  * - Simple: entity + optional name tag + optional spawn position
- * - Advanced: entity + spawn position + optional orientation + optional spawn event + optional name tag
+ * - Advanced: entity + spawn position + required Orientation reporter + optional spawn event + optional name tag
  *
  * Orientation reuses the shared Rotation / Facing AST types.
  */
@@ -76,7 +76,7 @@ namespace MCFunctionAST {
     export function createSummonAdvancedCommand(
         entityId: string,
         spawnPosition: Position,
-        orientation?: SummonOrientation,
+        orientation: SummonOrientation,
         spawnEvent?: string,
         nameTag?: string
     ): SummonCommand {

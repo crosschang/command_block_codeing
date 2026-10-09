@@ -12,6 +12,7 @@ The Registry is **search/autocomplete data**, not Minecraft command meaning. Com
 - Families
 - Events
 - Spawn Events
+- Block States (initial verified common-state catalog)
 
 There is no Quick Preset layer. Direct/custom input remains available, including custom namespaces, custom families, and custom behavior-pack events. Registry data is never a whitelist.
 
@@ -21,6 +22,7 @@ There is no Quick Preset layer. Direct/custom input remains available, including
 registry/source/bedrock/
 ├─ items.json
 ├─ blocks.json
+├─ block_states.json
 ├─ entities.json
 ├─ effects.json
 └─ particles.json
@@ -28,7 +30,8 @@ registry/source/bedrock/
 registry/derived/bedrock/
 ├─ families.json
 ├─ entity_events.json
-└─ spawn_events.json
+├─ spawn_events.json
+└─ block_state_usage.json
 ```
 
 `families.json` is derived from `minecraft:type_family` components in Mojang vanilla behavior entity JSON.
@@ -109,3 +112,25 @@ If Windows blocks `.ps1` execution, use the included `.cmd` wrappers (they use `
 ```
 
 No Python installation is required.
+
+## Block State Library (initial phase)
+
+Block states are shared authoring data for SETBLOCK / FILL / CLONE and future
+`execute if/unless block`. The runtime AST still accepts direct/custom states.
+The initial library exposes verified common orientation, activation, and structure
+states (for example `pillar_axis`, `lever_direction`, `open_bit`,
+`button_pressed_bit`, and `upside_down_bit`) while the registry relationship
+snapshot is expanded from official block listings.
+
+Important: built-in legacy `facing_direction` is numeric for many vanilla
+blocks, while `minecraft:facing_direction` is a distinct string-valued state
+used by placement-direction traits/custom blocks. Do not merge them.
+
+The initial `block_state_usage.json` is representative, not exhaustive, so it
+must not yet be used as a hard whitelist for all vanilla blocks.
+
+The first Block State Library is hand-authored from the verified registry snapshot
+because state reporters need typed dropdowns (enum/number/bit) rather than the
+flat generated-ID pattern used by items/blocks/entities. Generator integration
+for the complete state catalog is a later registry phase; the JSON snapshots are
+the data source and direct/custom input remains available.

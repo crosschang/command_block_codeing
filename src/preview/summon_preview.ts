@@ -26,13 +26,27 @@ namespace MCFunctionPreview {
         }
 
         let issues = MCFunctionValidator.validateSummonCommand(command);
+
+        if (FunctionFile.capturePreviewAction(issues, function () {
+            executeValidatedSummon(command);
+        })) {
+            return;
+        }
+
         if (MCFunctionValidator.hasError(issues)) {
-            if (issues.length > 0) {
-                player.say("Command Error: " + issues[0].message);
+            for (let i = 0; i < issues.length; i++) {
+                if (issues[i].level == MCFunctionValidator.ValidationLevel.Error) {
+                    previewSay("ERROR [" + issues[i].code + "]: " + issues[i].message);
+                    return;
+                }
             }
             return;
         }
 
+        executeValidatedSummon(command);
+    }
+
+    function executeValidatedSummon(command: MCFunctionAST.SummonCommand): void {
         if (!needsOrientationEmulation(command)) {
             executeCompiled(command);
             return;

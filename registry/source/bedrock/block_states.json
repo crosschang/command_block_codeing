@@ -1,0 +1,171 @@
+{
+    "schemaVersion": 1,
+    "platform": "bedrock",
+    "source": {
+        "kind": "block-state-docs-curated",
+        "provider": "MicrosoftDocs/minecraft-creator",
+        "url": "https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/auxvaluetoblockstatemap?view=minecraft-bedrock-stable",
+        "verifiedAt": "2026-10-08"
+    },
+    "notes": [
+        "Initial verified common-state catalog for authoring UI; not a whitelist.",
+        "Built-in legacy state keys and namespaced custom/newer state keys are kept distinct.",
+        "Direct/custom state input remains allowed."
+    ],
+    "states": [
+        {
+            "id": "pillar_axis",
+            "type": "string",
+            "values": [
+                "x",
+                "y",
+                "z"
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "minecraft:cardinal_direction",
+            "type": "string",
+            "values": [
+                "north",
+                "south",
+                "east",
+                "west"
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "minecraft:facing_direction",
+            "type": "string",
+            "values": [
+                "north",
+                "south",
+                "east",
+                "west",
+                "up",
+                "down"
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "facing_direction",
+            "type": "number",
+            "values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "direction",
+            "type": "number",
+            "values": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "lever_direction",
+            "type": "string",
+            "values": [
+                "down_east_west",
+                "east",
+                "west",
+                "south",
+                "north",
+                "up_north_south",
+                "up_east_west",
+                "down_north_south"
+            ],
+            "role": "orientation"
+        },
+        {
+            "id": "open_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "activation"
+        },
+        {
+            "id": "button_pressed_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "activation"
+        },
+        {
+            "id": "powered_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "activation"
+        },
+        {
+            "id": "triggered_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "activation"
+        },
+        {
+            "id": "in_wall_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "structure"
+        },
+        {
+            "id": "upside_down_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "structure"
+        },
+        {
+            "id": "door_hinge_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "structure"
+        },
+        {
+            "id": "upper_block_bit",
+            "type": "number",
+            "values": [
+                0,
+                1
+            ],
+            "role": "structure"
+        },
+        {
+            "id": "minecraft:vertical_half",
+            "type": "string",
+            "values": [
+                "bottom",
+                "top"
+            ],
+            "role": "structure"
+        }
+    ]
+}

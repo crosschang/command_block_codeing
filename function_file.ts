@@ -14,22 +14,24 @@
  *   - Minecraft command blocks are rejected while tickJson() is collecting values.
  *
  * Minecraft Education runtime preview:
- *   - FunctionFile.define() registers preview handlers for MakeCode-defined files.
- *   - Command.mcFunction("id") resolves those handlers first.
- *   - FunctionFile.tickJson() approximates tick.json by running every registered
- *     tickValue() entry in declaration order about every 50 ms.
+ *   - define() first captures the function body without changing the world.
+ *   - Definition Validation runs before any chat command is registered.
+ *   - Only a valid FunctionFile receives a chat preview command.
+ *   - The validated action plan is replayed later when chat/function/tick invokes it.
+ *   - Runtime world state (selectors, scores, tags, blocks, etc.) is still evaluated
+ *     when the validated plan actually executes.
  *
  * NOTE: Standard PXT callback statement inputs do not expose a custom Blockly
  * connection type through normal GitHub Extension annotations. The canonical
  * API and runtime guards below therefore enforce the project structure, while
- * the future Converter/Project Validator must reject non-tickValue statements
- * found inside tickJson() when parsing JavaScript.
+ * the future Converter/Project Validator must also validate parsed JavaScript.
  */
 //% color=#9966FF weight=95 icon="\uf15b"
 //% groups='["FUNCTION FILE", "TICK.JSON"]'
 namespace FunctionFile {
     let functionNames: string[] = [];
     let functionHandlers: (() => void)[] = [];
+    let functionValid: boolean[] = [];
 
     // Project-level representation of functions/tick.json.
     // Keep declaration order because Minecraft executes the listed functions in order.
@@ -40,10 +42,22 @@ namespace FunctionFile {
     // Preview-only structural context. This does not change exported command meaning.
     let functionExecutionDepth = 0;
     let reportedStructureErrorCodes: string[] = [];
+    let reportedInvalidFunctionNames: string[] = [];
+
+    // Definition Validation capture state.
+    // Command.* calls append validated replay actions here instead of touching the world.
+    let collectingDefinitionActions = false;
+    let definitionActions: (() => void)[] = [];
+    let definitionIssues: MCFunctionValidator.ValidationIssue[] = [];
+    let definitionStructureError = false;
 
     /**
      * Define one mcfunction file.
      * The callback body becomes the command list for that file in Converter Edition.
+     *
+     * Runtime Preview performs Definition Validation immediately. Invalid functions
+     * are kept in the internal registry so function/tick references cannot fall back
+     * accidentally, but NO chat command is registered for them.
      */
     //% blockId=function_file_define
     //% group="FUNCTION FILE" weight=100
@@ -69,24 +83,24 @@ namespace FunctionFile {
             return;
         }
 
-        register(name, handler);
-
-        // Keep the convenient direct chat preview used for simple function IDs.
-        // Wrap the callback so nested project containers are rejected consistently
-        // whether the function is invoked from chat or Command.mcFunction().
-        player.onChat(name, function () {
-            invokeFunctionHandler(handler);
-        });
+        prepareDefinition(name, handler);
     }
 
     /**
      * Runtime-preview resolver.
-     * Returns true when the requested function is defined in this MakeCode project.
+     * Returns true whenever the function ID belongs to this MakeCode project.
+     * Invalid definitions also return true so Preview never falls through to an
+     * unrelated Behavior Pack function with the same ID.
      */
     export function runPreview(name: string): boolean {
         for (let i = 0; i < functionNames.length; i++) {
             if (functionNames[i] == name) {
-                invokeFunctionHandler(functionHandlers[i]);
+                if (!functionValid[i]) {
+                    reportInvalidFunctionRun(name);
+                    return true;
+                }
+
+                invokePreparedHandler(functionHandlers[i]);
                 return true;
             }
         }
@@ -177,9 +191,115 @@ namespace FunctionFile {
         return false;
     }
 
+    /**
+     * Hidden Definition Validation hook used by Command.* and specialized Preview adapters.
+     *
+     * During FunctionFile.define() the command is validated and its replay action is
+     * captured, but the action is NOT executed. Returning true means the caller must
+     * stop because Definition Validation consumed the command.
+     */
+    export function capturePreviewAction(
+        issues: MCFunctionValidator.ValidationIssue[],
+        action: () => void
+    ): boolean {
+        if (!collectingDefinitionActions) {
+            return false;
+        }
+
+        for (let i = 0; i < issues.length; i++) {
+            definitionIssues.push(issues[i]);
+        }
+
+        if (!MCFunctionValidator.hasError(issues)) {
+            definitionActions.push(action);
+        }
+
+        return true;
+    }
+
     /** Preview/debug helper for future project-level validation and tests. */
     export function isCollectingTickValues(): boolean {
         return collectingTickValues;
+    }
+
+    function prepareDefinition(name: string, handler: () => void): void {
+        // Save/restore capture state defensively. Nested FunctionFile.define() is
+        // rejected above, but this keeps the internal gate deterministic if the
+        // implementation is reused later by another project-level validation pass.
+        let previousCollecting = collectingDefinitionActions;
+        let previousActions = definitionActions;
+        let previousIssues = definitionIssues;
+        let previousStructureError = definitionStructureError;
+
+        collectingDefinitionActions = true;
+        definitionActions = [];
+        definitionIssues = [];
+        definitionStructureError = false;
+
+        functionExecutionDepth++;
+        handler();
+        functionExecutionDepth--;
+
+        let actions = definitionActions;
+        let issues = definitionIssues;
+        let structureError = definitionStructureError;
+
+        collectingDefinitionActions = previousCollecting;
+        definitionActions = previousActions;
+        definitionIssues = previousIssues;
+        definitionStructureError = previousStructureError;
+
+        let valid = !structureError && !MCFunctionValidator.hasError(issues);
+        let preparedHandler = createPreparedHandler(actions);
+        register(name, preparedHandler, valid);
+
+        reportDefinitionIssues(name, issues, structureError);
+
+        if (!valid) {
+            return;
+        }
+
+        // IMPORTANT: registration happens only after Definition Validation PASS.
+        // The Validation Gate itself remains invisible in the MakeCode workspace.
+        player.onChat(name, function () {
+            runPreview(name);
+        });
+    }
+
+    function createPreparedHandler(actions: (() => void)[]): () => void {
+        return function () {
+            for (let i = 0; i < actions.length; i++) {
+                actions[i]();
+            }
+        };
+    }
+
+    function reportDefinitionIssues(
+        name: string,
+        issues: MCFunctionValidator.ValidationIssue[],
+        structureError: boolean
+    ): void {
+        if (structureError || MCFunctionValidator.hasError(issues)) {
+            MCFunctionPreview.previewSay(
+                "ERROR: mcfunction " + name + " was not registered because definition validation failed."
+            );
+        }
+
+        for (let i = 0; i < issues.length; i++) {
+            if (issues[i].level == MCFunctionValidator.ValidationLevel.Error) {
+                MCFunctionPreview.previewSay(
+                    "ERROR [" + issues[i].code + "]: " + issues[i].message
+                );
+            } else if (issues[i].level == MCFunctionValidator.ValidationLevel.Warning) {
+                MCFunctionPreview.previewSay(
+                    "WARNING [" + issues[i].code + "]: " + issues[i].message
+                );
+            } else if (issues[i].level == MCFunctionValidator.ValidationLevel.Info) {
+                MCFunctionPreview.previewSay(
+                    "INFO [" + issues[i].code + "]: " + issues[i].message
+                );
+            }
+        }
     }
 
     function startTickPreview(): void {
@@ -197,9 +317,9 @@ namespace FunctionFile {
             for (let i = 0; i < tickFile.values.length; i++) {
                 let functionId = tickFile.values[i];
 
-                // Prefer MakeCode-defined FunctionFile handlers. If the function
-                // only exists in an active Behavior Pack, reuse the normal function
-                // command path so fallback still uses AST -> Validator -> Compiler.
+                // Prefer MakeCode-defined FunctionFile plans. If the function only
+                // exists in an active Behavior Pack, reuse the normal function command
+                // path so fallback still uses AST -> Validator -> Compiler.
                 if (!runPreview(functionId)) {
                     Command.mcFunction(functionId);
                 }
@@ -207,27 +327,48 @@ namespace FunctionFile {
         });
     }
 
-    function invokeFunctionHandler(handler: () => void): void {
+    function invokePreparedHandler(handler: () => void): void {
         functionExecutionDepth++;
         handler();
         functionExecutionDepth--;
     }
 
-    function register(name: string, handler: () => void): void {
+    function register(name: string, handler: () => void, valid: boolean): void {
         // If Blocks <-> JavaScript is refreshed, replace an existing definition
-        // rather than keeping duplicate preview callbacks in our own registry.
+        // rather than keeping duplicate entries in our own preview registry.
         for (let i = 0; i < functionNames.length; i++) {
             if (functionNames[i] == name) {
                 functionHandlers[i] = handler;
+                functionValid[i] = valid;
                 return;
             }
         }
 
         functionNames.push(name);
         functionHandlers.push(handler);
+        functionValid.push(valid);
+    }
+
+    function reportInvalidFunctionRun(name: string): void {
+        for (let i = 0; i < reportedInvalidFunctionNames.length; i++) {
+            if (reportedInvalidFunctionNames[i] == name) {
+                return;
+            }
+        }
+
+        reportedInvalidFunctionNames.push(name);
+        MCFunctionPreview.previewSay(
+            "ERROR: mcfunction " + name + " is unavailable because definition validation failed."
+        );
     }
 
     function reportStructureError(code: string, message: string): void {
+        // Structural errors reached while preparing a FunctionFile invalidate the
+        // definition even when the visible message for that code was already shown.
+        if (collectingDefinitionActions) {
+            definitionStructureError = true;
+        }
+
         // Avoid flooding chat when invalid project structure is reached from a
         // tick function. One message per structural error code is enough for Preview.
         for (let i = 0; i < reportedStructureErrorCodes.length; i++) {
@@ -237,10 +378,7 @@ namespace FunctionFile {
         }
 
         reportedStructureErrorCodes.push(code);
-
-        // Structural project errors are reported directly because they are not
-        // Minecraft Command AST validation errors.
-        player.say("Project Error [" + code + "]: " + message);
+        MCFunctionPreview.previewSay("PROJECT ERROR [" + code + "]: " + message);
     }
 }
 

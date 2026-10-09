@@ -12,20 +12,7 @@
 //% color=#4C97FF weight=100 icon="\uf1b2"
 //% groups='["SETBLOCK", "FILL", "CLONE", "TAG", "GAMEMODE", "KILL", "CLEAR", "SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
 namespace Command {
-    function executeCommand(command: MCFunctionAST.CommandNode): void {
-        if (!FunctionFile.allowCommandExecution()) {
-            return;
-        }
-
-        let issues = MCFunctionValidator.validateCommand(command);
-
-        if (MCFunctionValidator.hasError(issues)) {
-            if (issues.length > 0) {
-                player.say("Command Error: " + issues[0].message);
-            }
-            return;
-        }
-
+    function executeValidatedCommandNow(command: MCFunctionAST.CommandNode): void {
         let queryResult = MCFunctionPreview.tryHandleQuery(command);
         if (queryResult.handled) {
             return;
@@ -36,6 +23,36 @@ namespace Command {
             let success = player.execute(compiled);
             MCFunctionPreview.observeCommand(command, success);
         }
+    }
+
+    function reportCommandValidationError(issues: MCFunctionValidator.ValidationIssue[]): void {
+        for (let i = 0; i < issues.length; i++) {
+            if (issues[i].level == MCFunctionValidator.ValidationLevel.Error) {
+                MCFunctionPreview.previewSay("ERROR [" + issues[i].code + "]: " + issues[i].message);
+                return;
+            }
+        }
+    }
+
+    function executeCommand(command: MCFunctionAST.CommandNode): void {
+        if (!FunctionFile.allowCommandExecution()) {
+            return;
+        }
+
+        let issues = MCFunctionValidator.validateCommand(command);
+
+        if (FunctionFile.capturePreviewAction(issues, function () {
+            executeValidatedCommandNow(command);
+        })) {
+            return;
+        }
+
+        if (MCFunctionValidator.hasError(issues)) {
+            reportCommandValidationError(issues);
+            return;
+        }
+
+        executeValidatedCommandNow(command);
     }
 
     /** Execute a command line that is not yet represented by a structured block. */
@@ -71,19 +88,30 @@ namespace Command {
         }
 
         let command = MCFunctionBlocks.createMcFunctionCommand(functionId);
+        let issues = MCFunctionValidator.validateCommand(command);
 
-        // Converter/export meaning still comes from the AST + Compiler:
-        //   function sub/test
-        //
-        // Runtime preview is different: FunctionFile.define() does not create a
-        // real Behavior Pack file, so resolve MakeCode-defined functions first.
-        if (FunctionFile.runPreview(functionId)) {
+        let action = function () {
+            // Runtime preview is different: FunctionFile.define() does not create a
+            // real Behavior Pack file, so resolve MakeCode-defined functions first.
+            if (FunctionFile.runPreview(functionId)) {
+                return;
+            }
+
+            // Fallback: allow calling a real function that already exists
+            // in the world's active Behavior Pack.
+            executeValidatedCommandNow(command);
+        };
+
+        if (FunctionFile.capturePreviewAction(issues, action)) {
             return;
         }
 
-        // Fallback: allow calling a real function that already exists
-        // in the world's active Behavior Pack.
-        executeCommand(command);
+        if (MCFunctionValidator.hasError(issues)) {
+            reportCommandValidationError(issues);
+            return;
+        }
+
+        action();
     }
 
 
@@ -257,11 +285,13 @@ namespace Command {
 
     /**
      * Advanced summon form.
-     * Position is explicit; orientation / spawn event / name tag expand as optional arguments.
+     * Position and Orientation are explicit. Spawn event / name tag remain optional.
+     * A visible `no orientation` reporter represents the intentional no-orientation case;
+     * a physically empty Orientation socket is a validation ERROR.
      */
     //% blockId=mcfunction_summon_advanced
     //% group="SUMMON" weight=90
-    //% block="SUMMON ADVANCED entity $entity at $spawnPosition || orientation $orientation spawn event $spawnEvent name $nameTag"
+    //% block="SUMMON ADVANCED entity $entity at $spawnPosition orientation $orientation || spawn event $spawnEvent name $nameTag"
     //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% entity.shadow="mcfunction_entity_custom_id"
@@ -274,7 +304,7 @@ namespace Command {
     export function summonAdvanced(
         entity: MCFunctionFields.EntityValue,
         spawnPosition: MCFunctionPositionFields.PositionValue,
-        orientation?: SummonOrientationValue,
+        orientation: SummonOrientationValue,
         spawnEvent?: string,
         nameTag?: string
     ): void {
@@ -282,7 +312,7 @@ namespace Command {
             MCFunctionBlocks.createSummonAdvancedCommand(
                 entity.entityId,
                 spawnPosition.position,
-                orientation ? orientation.orientation : MCFunctionAST.createSummonNoOrientation(),
+                orientation ? orientation.orientation : undefined,
                 spawnEvent,
                 nameTag
             )
@@ -954,7 +984,7 @@ namespace Command {
     //% inlineInputMode=external
     //% position.shadow="mcfunction_position_relative"
     //% block.shadow="mcfunction_block_custom_id"
-    //% states.shadow="mcfunction_block_state_string"
+    //% states.shadow="mcfunction_block_states_add"
     //% mode.shadow="mcfunction_setblock_mode"
     export function setblock(
         position: MCFunctionPositionFields.PositionValue,
@@ -1007,7 +1037,7 @@ namespace Command {
     //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% block.shadow="mcfunction_block_custom_id"
-    //% states.shadow="mcfunction_block_state_string"
+    //% states.shadow="mcfunction_block_states_add"
     export function fillReplaceOnly(
         block: MCFunctionFields.BlockValue,
         states?: MCFunctionBlockStateFields.BlockStatesValue
@@ -1061,7 +1091,7 @@ namespace Command {
     //% from.shadow="mcfunction_position_relative"
     //% to.shadow="mcfunction_position_relative"
     //% block.shadow="mcfunction_block_custom_id"
-    //% states.shadow="mcfunction_block_state_string"
+    //% states.shadow="mcfunction_block_states_add"
     //% handling.shadow="mcfunction_fill_replace"
     export function fill(
         from: MCFunctionPositionFields.PositionValue,
@@ -1134,7 +1164,7 @@ namespace Command {
     //% expandableArgumentMode="enabled"
     //% inlineInputMode=external
     //% block.shadow="mcfunction_block_custom_id"
-    //% states.shadow="mcfunction_block_state_string"
+    //% states.shadow="mcfunction_block_states_add"
     export function cloneFiltered(
         block: MCFunctionFields.BlockValue,
         states?: MCFunctionBlockStateFields.BlockStatesValue

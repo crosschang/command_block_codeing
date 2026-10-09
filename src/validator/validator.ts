@@ -716,7 +716,17 @@ namespace MCFunctionValidator {
         orientation: MCFunctionAST.SummonOrientation,
         issues: ValidationIssue[]
     ): void {
-        if (!orientation || orientation.kind == MCFunctionAST.SummonOrientationKind.None) {
+        if (!orientation) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_ORIENTATION_MISSING",
+                "SUMMON ADVANCED requires an Orientation reporter. Use no orientation when direction is intentionally omitted."
+            );
+            return;
+        }
+
+        if (orientation.kind == MCFunctionAST.SummonOrientationKind.None) {
             return;
         }
 

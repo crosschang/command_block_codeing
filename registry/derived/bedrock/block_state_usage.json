@@ -1,0 +1,67 @@
+{
+    "schemaVersion": 1,
+    "platform": "bedrock",
+    "source": {
+        "kind": "default-block-listings-curated",
+        "provider": "MicrosoftDocs/minecraft-creator",
+        "url": "https://learn.microsoft.com/en-us/minecraft/creator/reference/content/vanillalistingsreference/blocks?view=minecraft-bedrock-stable",
+        "verifiedAt": "2026-10-08"
+    },
+    "notes": [
+        "Initial representative block/state relationships for validation and Runtime tests.",
+        "Not exhaustive and not a whitelist. Expand from official listings before strict vanilla validation is enabled."
+    ],
+    "blocks": [
+        {
+            "id": "minecraft:lever",
+            "states": [
+                "lever_direction",
+                "open_bit"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_button",
+            "states": [
+                "button_pressed_bit",
+                "facing_direction"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_log",
+            "states": [
+                "pillar_axis"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_wood",
+            "states": [
+                "pillar_axis"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_door",
+            "states": [
+                "door_hinge_bit",
+                "minecraft:cardinal_direction",
+                "open_bit",
+                "upper_block_bit"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_trapdoor",
+            "states": [
+                "direction",
+                "open_bit",
+                "upside_down_bit"
+            ]
+        },
+        {
+            "pattern": "minecraft:*_fence_gate",
+            "states": [
+                "in_wall_bit",
+                "minecraft:cardinal_direction",
+                "open_bit"
+            ]
+        }
+    ]
+}
