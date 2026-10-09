@@ -94,14 +94,6 @@ namespace MCFunctionBlockStateLibrary {
         DownNorthSouth = 7
     }
 
-    /** Vanilla 0/1 bit states are numbers in block_state_array syntax. */
-    export enum StateBit {
-        //% block="0 off"
-        Off = 0,
-        //% block="1 on"
-        On = 1
-    }
-
     export enum VerticalHalf {
         //% block="bottom"
         Bottom = 0,
@@ -199,72 +191,72 @@ namespace MCFunctionBlockStateLibrary {
     //% group="ACTIVATION" weight=100
     //% blockId=mcfunction_block_state_library_open_bit
     //% block="open bit $value"
-    export function openBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function openBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("open_bit", value)
+            MCFunctionAST.createBooleanBlockState("open_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="ACTIVATION" weight=99
     //% blockId=mcfunction_block_state_library_button_pressed_bit
     //% block="button pressed bit $value"
-    export function buttonPressedBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function buttonPressedBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("button_pressed_bit", value)
+            MCFunctionAST.createBooleanBlockState("button_pressed_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="ACTIVATION" weight=98
     //% blockId=mcfunction_block_state_library_powered_bit
     //% block="powered bit $value"
-    export function poweredBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function poweredBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("powered_bit", value)
+            MCFunctionAST.createBooleanBlockState("powered_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="ACTIVATION" weight=97
     //% blockId=mcfunction_block_state_library_triggered_bit
     //% block="triggered bit $value"
-    export function triggeredBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function triggeredBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("triggered_bit", value)
+            MCFunctionAST.createBooleanBlockState("triggered_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="STRUCTURE" weight=100
     //% blockId=mcfunction_block_state_library_upside_down_bit
     //% block="upside down bit $value"
-    export function upsideDownBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function upsideDownBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("upside_down_bit", value)
+            MCFunctionAST.createBooleanBlockState("upside_down_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="STRUCTURE" weight=99
     //% blockId=mcfunction_block_state_library_door_hinge_bit
     //% block="door hinge bit $value"
-    export function doorHingeBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function doorHingeBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("door_hinge_bit", value)
+            MCFunctionAST.createBooleanBlockState("door_hinge_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="STRUCTURE" weight=98
     //% blockId=mcfunction_block_state_library_upper_block_bit
     //% block="upper block bit $value"
-    export function upperBlockBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function upperBlockBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("upper_block_bit", value)
+            MCFunctionAST.createBooleanBlockState("upper_block_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 
     //% group="STRUCTURE" weight=97
     //% blockId=mcfunction_block_state_library_in_wall_bit
     //% block="in wall bit $value"
-    export function inWallBit(value: StateBit): MCFunctionBlockStateFields.BlockStateEntryValue {
+    export function inWallBit(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {
         return MCFunctionBlockStateFields.entry(
-            MCFunctionAST.createNumberBlockState("in_wall_bit", value)
+            MCFunctionAST.createBooleanBlockState("in_wall_bit", MCFunctionFields.booleanLiteralValue(value))
         );
     }
 

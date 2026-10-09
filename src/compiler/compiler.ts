@@ -147,7 +147,7 @@ namespace MCFunctionCompiler {
             if (i > 0) result = result + ",";
 
             let entry = states.entries[i];
-            result = result + "\"" + escapeBlockStateText(entry.key) + "\" = ";
+            result = result + "\"" + escapeBlockStateText(entry.key) + "\"=";
 
             if (entry.kind == MCFunctionAST.BlockStateValueKind.String) {
                 result = result + "\"" + escapeBlockStateText(entry.stringValue) + "\"";

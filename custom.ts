@@ -4,10 +4,11 @@
  * Canonical export path:
  * Block -> AST -> Validator -> Compiler -> command string
  *
- * Runtime Preview normally executes that compiler output directly. SUMMON
- * ADVANCED Rotation/Facing is the one compatibility exception: MakeCode
- * player.execute() rejects those modern overloads, so MCFunctionPreview
- * emulates only the orientation while the exported command stays unchanged.
+ * Runtime Preview normally executes compiler output directly. Compatibility
+ * adapters are allowed only when MakeCode player.execute() differs from the
+ * real Bedrock/Education command parser. SUMMON orientation is emulated, and
+ * block-state commands use a Preview-only `:` serializer while canonical
+ * .mcfunction output keeps the real `=` syntax.
  */
 //% color=#4C97FF weight=100 icon="\uf1b2"
 //% groups='["SETBLOCK", "FILL", "CLONE", "TAG", "GAMEMODE", "KILL", "CLEAR", "SUMMON", "EFFECT", "TELEPORT", "GIVE", "SAY", "FUNCTION", "RAW COMMAND"]'
@@ -18,7 +19,11 @@ namespace Command {
             return;
         }
 
-        let compiled = MCFunctionCompiler.compileCommand(command);
+        let compiled = MCFunctionPreviewBlockCommandSerializer.tryCompile(command);
+        if (compiled.length == 0) {
+            compiled = MCFunctionCompiler.compileCommand(command);
+        }
+
         if (compiled.length > 0) {
             let success = player.execute(compiled);
             MCFunctionPreview.observeCommand(command, success);

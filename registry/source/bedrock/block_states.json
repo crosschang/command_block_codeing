@@ -2,15 +2,16 @@
     "schemaVersion": 1,
     "platform": "bedrock",
     "source": {
-        "kind": "block-state-docs-curated",
+        "kind": "intrinsic-block-state-types-curated",
         "provider": "MicrosoftDocs/minecraft-creator",
-        "url": "https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/auxvaluetoblockstatemap?view=minecraft-bedrock-stable",
-        "verifiedAt": "2026-10-08"
+        "url": "https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/intrinsicblockstateslist?view=minecraft-bedrock-experimental",
+        "verifiedAt": "2026-10-09"
     },
     "notes": [
-        "Initial verified common-state catalog for authoring UI; not a whitelist.",
-        "Built-in legacy state keys and namespaced custom/newer state keys are kept distinct.",
-        "Direct/custom state input remains allowed."
+        "Initial official-doc-backed common-state catalog for authoring UI; not a whitelist.",
+        "Block-state value type is semantic data and must be preserved as string, number, or boolean.",
+        "Minecraft Education 26.32 runtime verified open_bit as boolean in player.execute; direct/custom state input remains allowed.",
+        "Command serialization syntax is target-path specific: real chat/.mcfunction uses = while MakeCode player.execute preview uses :."
     ],
     "states": [
         {
@@ -88,73 +89,73 @@
         },
         {
             "id": "open_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "activation"
         },
         {
             "id": "button_pressed_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "activation"
         },
         {
             "id": "powered_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "activation"
         },
         {
             "id": "triggered_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "activation"
         },
         {
             "id": "in_wall_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "structure"
         },
         {
             "id": "upside_down_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "structure"
         },
         {
             "id": "door_hinge_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "structure"
         },
         {
             "id": "upper_block_bit",
-            "type": "number",
+            "type": "boolean",
             "values": [
-                0,
-                1
+                false,
+                true
             ],
             "role": "structure"
         },

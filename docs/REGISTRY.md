@@ -122,15 +122,16 @@ states (for example `pillar_axis`, `lever_direction`, `open_bit`,
 `button_pressed_bit`, and `upside_down_bit`) while the registry relationship
 snapshot is expanded from official block listings.
 
-Important: built-in legacy `facing_direction` is numeric for many vanilla
-blocks, while `minecraft:facing_direction` is a distinct string-valued state
-used by placement-direction traits/custom blocks. Do not merge them.
+Important: block-state value types are version/data sensitive. Do not infer a
+state type from its name. Keep legacy/current state IDs distinct until the
+target Bedrock/Education version is verified through official data or runtime
+tests.
 
 The initial `block_state_usage.json` is representative, not exhaustive, so it
 must not yet be used as a hard whitelist for all vanilla blocks.
 
 The first Block State Library is hand-authored from the verified registry snapshot
-because state reporters need typed dropdowns (enum/number/bit) rather than the
+because state reporters need typed dropdowns (string/number/boolean) rather than the
 flat generated-ID pattern used by items/blocks/entities. Generator integration
 for the complete state catalog is a later registry phase; the JSON snapshots are
 the data source and direct/custom input remains available.
