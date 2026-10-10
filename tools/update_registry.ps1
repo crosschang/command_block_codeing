@@ -21,7 +21,8 @@ $Headers = @{
 $Urls = [ordered]@{
     items            = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/enums/Item.md'
     blocks           = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/enums/Block.md'
-    entities         = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Reference/Content/VanillaListingsReference/Entities.md'
+    entity_types     = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/enums/EntityType.md'
+    entity_listing   = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Reference/Content/VanillaListingsReference/Entities.md'
     effects          = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/commands/effect.md'
     entity_events    = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/enums/EntityEvents.md'
     particles_api    = 'https://api.github.com/repos/Mojang/bedrock-samples/contents/resource_pack/particles?ref=main'
@@ -703,7 +704,9 @@ Write-Host 'Downloading official Bedrock Registry sources...'
 $Data = [ordered]@{}
 $Data.items = @(Parse-NamespacedEnum (Get-WebText $Urls.items))
 $Data.blocks = @(Parse-NamespacedEnum (Get-WebText $Urls.blocks))
-$Data.entities = @(Parse-Entities (Get-WebText $Urls.entities))
+$CommandEntityTypes = @(Parse-NamespacedEnum (Get-WebText $Urls.entity_types))
+$ListingEntities = @(Parse-Entities (Get-WebText $Urls.entity_listing))
+$Data.entities = @(Get-UniqueOrdered (@($CommandEntityTypes) + @($ListingEntities)))
 $Data.effects = @(Parse-Effects (Get-WebText $Urls.effects))
 $Data.particles = @(Parse-Particles)
 $OfficialEntityEvents = @(Parse-EntityEventsEnum (Get-WebText $Urls.entity_events))
@@ -719,6 +722,12 @@ foreach ($Kind in $Data.Keys) {
     if ($Data[$Kind].Count -lt $Guards[$Kind]) {
         throw "$Kind parse returned only $($Data[$Kind].Count); expected at least $($Guards[$Kind]). No files written."
     }
+}
+if ($CommandEntityTypes.Count -lt 90) {
+    throw "Official EntityType enum parse returned only $($CommandEntityTypes.Count); expected at least 90. No files written."
+}
+if ($ListingEntities.Count -lt 100) {
+    throw "Vanilla entity listing parse returned only $($ListingEntities.Count); expected at least 100. No files written."
 }
 if ($OfficialEntityEvents.Count -lt 200) {
     throw "Official EntityEvents enum parse returned only $($OfficialEntityEvents.Count); expected at least 200. No files written."
@@ -753,6 +762,8 @@ foreach ($Kind in $Data.Keys) {
 Show-Diff 'families' @(Load-OldIds $DerivedDir 'families') @($FamilyIds)
 Show-Diff 'entity_events' @(Load-OldRelations 'entity_events') @($EntityRelations)
 Show-Diff 'spawn_events' @(Load-OldRelations 'spawn_events') @($SpawnRelations)
+Write-Host ('{0,-14}: {1}' -f 'entity enum', $CommandEntityTypes.Count)
+Write-Host ('{0,-14}: {1}' -f 'entity listing', $ListingEntities.Count)
 Write-Host ('{0,-14}: {1}' -f 'official events', $OfficialEntityEvents.Count)
 Write-Host ('{0,-14}: {1}' -f 'entity files', $Derived.ParsedEntityFiles)
 Write-Host ('{0,-14}: {1}' -f 'spawn refs', $Derived.SpawnEventReferenceCount)
@@ -777,7 +788,7 @@ $CommonNotes = @(
 $Specs = [ordered]@{
     items = @('MicrosoftDocs/minecraft-creator', $Urls.items, 'command-enum-item', @('Canonical minecraft:* item IDs only.') + $CommonNotes)
     blocks = @('MicrosoftDocs/minecraft-creator', $Urls.blocks, 'command-enum-block', @('Canonical minecraft:* block IDs only.') + $CommonNotes)
-    entities = @('MicrosoftDocs/minecraft-creator', $Urls.entities, 'vanilla-entity-listing', @('Vanilla entity identifiers from Microsoft documentation.') + $CommonNotes)
+    entities = @('MicrosoftDocs/minecraft-creator', $Urls.entity_types, 'command-enum-entitytype-with-listing-fallback', @('Primary source is the official EntityType command enum.', 'Secondary documented vanilla-listing fallback: ' + $Urls.entity_listing, 'Registry membership does not by itself prove /summon availability or target-platform support.', 'Custom entity namespaces remain supported through Direct Input.') + $CommonNotes)
     effects = @('MicrosoftDocs/minecraft-creator', $Urls.effects, 'command-enum-effect', @('Effect command tokens do not use minecraft: namespace.') + $CommonNotes)
     particles = @('Mojang/bedrock-samples', $Urls.particles_api, 'vanilla-resource-pack-particle-identifiers', @('Identifiers parsed from particle_effect.description.identifier in Mojang bedrock-samples.', 'Some vanilla particles require Molang/entity context and may not visibly work with /particle.') + $CommonNotes)
 }

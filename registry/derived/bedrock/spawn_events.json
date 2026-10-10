@@ -5,7 +5,7 @@
                    "kind":  "vanilla-behavior-spawn-events-derived",
                    "provider":  "Mojang/bedrock-samples",
                    "url":  "https://api.github.com/repos/Mojang/bedrock-samples/contents/behavior_pack/entities?ref=main",
-                   "fetchedAtUtc":  "2026-10-10T06:22:05.3018325Z"
+                   "fetchedAtUtc":  "2026-10-10T08:01:44.2274316Z"
                },
     "notes":  [
                   "Used by the SPAWN EVENT Library for /summon ... \u003cspawnEvent\u003e.",

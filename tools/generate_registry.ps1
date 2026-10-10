@@ -6,7 +6,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$GeneratorVersion = '13.0.0'
+$GeneratorVersion = '14.0.0'
 if ($ExpectedVersion -and $ExpectedVersion -ne $GeneratorVersion) {
     throw "Registry generator version mismatch. Expected $ExpectedVersion but found $GeneratorVersion."
 }
@@ -587,6 +587,7 @@ function Generate-RegistryLookup() {
         ' * - registry/source/bedrock/blocks.json',
         ' * - registry/source/bedrock/entities.json',
         ' * - registry/source/bedrock/items.json',
+        ' * - registry/source/bedrock/effects.json',
         ' * Generator: tools/generate_registry.ps1',
         ' *',
         ' * Hidden runtime lookup used only by Definition Validation.',
@@ -599,7 +600,8 @@ function Generate-RegistryLookup() {
     $LookupKinds = @(
         [ordered]@{ Kind='blocks'; Name='knownBlockIds' },
         [ordered]@{ Kind='entities'; Name='knownEntityIds' },
-        [ordered]@{ Kind='items'; Name='knownItemIds' }
+        [ordered]@{ Kind='items'; Name='knownItemIds' },
+        [ordered]@{ Kind='effects'; Name='knownEffectIds' }
     )
 
     foreach ($Lookup in $LookupKinds) {
@@ -655,6 +657,10 @@ function Generate-RegistryLookup() {
         '',
         '    export function isKnownItem(value: string): boolean {',
         '        return containsSorted(knownItemIds, normalizeVanillaId(value));',
+        '    }',
+        '',
+        '    export function isKnownEffect(value: string): boolean {',
+        '        return containsSorted(knownEffectIds, value);',
         '    }',
         '}',
         ''

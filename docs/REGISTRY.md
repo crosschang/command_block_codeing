@@ -88,7 +88,8 @@ Apply the current official snapshots and regenerate libraries:
 
 The updater reads:
 
-- Item / Block / Entity / Effect data from Microsoft Minecraft Creator documentation
+- Item / Block / Effect data from Microsoft Minecraft Creator command documentation
+- Entity IDs from the official command `EntityType` enum, merged with the documented vanilla entity listing as a non-destructive fallback
 - Particle identifiers from Mojang `bedrock-samples`
 - Family and per-entity event relationships from Mojang vanilla behavior entity JSON
 - Microsoft `EntityEvents` documentation as a sanity check for the command argument domain
@@ -155,3 +156,46 @@ complete-vs-representative coverage awareness
 Registry applicability is a diagnostic aid, not a replacement for Minecraft
 Runtime. Custom Block IDs and Custom Block States remain available through
 Direct Input.
+
+## Existing Library policy update (0.0.37)
+
+Entity Registry source priority:
+
+```text
+official command EntityType enum
++ documented vanilla entity listing fallback
+→ one non-destructive authoring Registry
+```
+
+The fallback prevents command-authoring suggestions from losing documented IDs that are
+not present in the current command-enum snapshot. Registry membership does not prove an
+entity is summonable; `/summon` capability is a separate concern.
+
+Effect uses `VERSIONED_NATIVE_ENUM`: Add-on authors do not extend the native `/effect`
+domain, but Mojang may add or change native Effect values by Minecraft version/platform.
+The Direct Input reporter remains available for forward-version/import preservation and is
+labelled **effect direct value**, not custom effect. Unknown values produce
+`EFFECT_ID_UNKNOWN` WARNING rather than Custom Namespace INFO or a hard ERROR.
+
+Particle and Family remain extensible/reference-oriented Registries and are not converted
+to fixed-enum validation by this update.
+
+
+### Versioned native/command enums
+
+Do not use `FIXED_NATIVE_ENUM` to mean “this list can never change.” The project distinguishes:
+
+```text
+VERSIONED_NATIVE_ENUM
+→ Mojang-owned semantic/native registries
+→ Effect / Gamerule / Enchantment
+
+VERSIONED_COMMAND_ENUM
+→ fixed choices in command grammar
+→ Gamemode / Difficulty / Weather / Fill mode / Clone mode
+```
+
+Both may change with Minecraft version/platform, but Add-on authors do not extend those native
+command domains. Unknown Direct Input can still be preserved where the authoring/import path
+requires forward-version compatibility.
+

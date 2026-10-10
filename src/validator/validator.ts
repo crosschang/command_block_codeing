@@ -755,6 +755,13 @@ namespace MCFunctionValidator {
                 "EFFECT_ID_INVALID",
                 "Effect ID is empty or contains invalid command characters."
             );
+        } else if (!MCFunctionRegistryLookup.isKnownEffect(command.effectId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Warning,
+                "EFFECT_ID_UNKNOWN",
+                "Effect value " + command.effectId + " is not present in the current native /effect Registry. Preview and export will continue for version/import compatibility."
+            );
         }
 
         if (command.mode == MCFunctionAST.EffectMode.ClearSpecific) {

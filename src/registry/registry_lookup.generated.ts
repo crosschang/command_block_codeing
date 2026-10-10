@@ -5,6 +5,7 @@
  * - registry/source/bedrock/blocks.json
  * - registry/source/bedrock/entities.json
  * - registry/source/bedrock/items.json
+ * - registry/source/bedrock/effects.json
  * Generator: tools/generate_registry.ps1
  *
  * Hidden runtime lookup used only by Definition Validation.
@@ -2955,6 +2956,46 @@ namespace MCFunctionRegistryLookup {
         "minecraft:zombie_villager_spawn_egg",
     ];
 
+    let knownEffectIds: string[] = [
+        "absorption",
+        "bad_omen",
+        "blindness",
+        "breath_of_the_nautilus",
+        "conduit_power",
+        "darkness",
+        "fatal_poison",
+        "fire_resistance",
+        "haste",
+        "health_boost",
+        "hunger",
+        "infested",
+        "instant_damage",
+        "instant_health",
+        "invisibility",
+        "jump_boost",
+        "levitation",
+        "mining_fatigue",
+        "nausea",
+        "night_vision",
+        "oozing",
+        "poison",
+        "raid_omen",
+        "regeneration",
+        "resistance",
+        "saturation",
+        "slow_falling",
+        "slowness",
+        "speed",
+        "strength",
+        "trial_omen",
+        "village_hero",
+        "water_breathing",
+        "weakness",
+        "weaving",
+        "wind_charged",
+        "wither",
+    ];
+
     function normalizeVanillaId(value: string): string {
         if (!value) return value;
         if (value.indexOf(":") < 0) return "minecraft:" + value;
@@ -2994,6 +3035,10 @@ namespace MCFunctionRegistryLookup {
 
     export function isKnownItem(value: string): boolean {
         return containsSorted(knownItemIds, normalizeVanillaId(value));
+    }
+
+    export function isKnownEffect(value: string): boolean {
+        return containsSorted(knownEffectIds, value);
     }
 }
 

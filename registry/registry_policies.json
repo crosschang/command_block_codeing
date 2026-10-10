@@ -29,11 +29,12 @@
       "runtimeValidationReliability": "CONTEXT_DEPENDENT"
     },
     "effects": {
-      "customPolicy": "FIXED_NATIVE_ENUM",
+      "customPolicy": "VERSIONED_NATIVE_ENUM",
       "sourceRole": "COMMAND_ENUM",
       "commandUsable": true,
       "addonAuthoringOnly": false,
-      "runtimeValidationReliability": "HIGH"
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true
     },
     "particles": {
       "customPolicy": "EXTENSIBLE_NAMESPACED_ID",
@@ -70,7 +71,11 @@
       "customPolicy": "VANILLA_STATE_PLUS_CUSTOM_FALLBACK",
       "sourceRole": "VANILLA_BLOCK_RUNTIME_METADATA",
       "ownerScope": "Block",
-      "valueSchema": ["String", "Number", "Boolean"],
+      "valueSchema": [
+        "String",
+        "Number",
+        "Boolean"
+      ],
       "commandUsable": true,
       "addonAuthoringOnly": false,
       "runtimeValidationReliability": "HIGH_FOR_KNOWN_VANILLA"
@@ -84,19 +89,25 @@
       "requiresNamespace": false
     },
     "gamerules": {
-      "customPolicy": "FIXED_NATIVE_ENUM",
+      "customPolicy": "VERSIONED_NATIVE_ENUM",
       "sourceRole": "COMMAND_TYPED_ENUM",
-      "valueSchema": ["Boolean", "Integer", "Enum"],
+      "valueSchema": [
+        "Boolean",
+        "Integer",
+        "Enum"
+      ],
       "commandUsable": true,
       "addonAuthoringOnly": false,
-      "runtimeValidationReliability": "HIGH"
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true
     },
     "enchantments": {
-      "customPolicy": "FIXED_NATIVE_ENUM",
+      "customPolicy": "VERSIONED_NATIVE_ENUM",
       "sourceRole": "COMMAND_ENUM",
       "commandUsable": true,
       "addonAuthoringOnly": false,
-      "runtimeValidationReliability": "HIGH"
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true
     },
     "selector_filters": {
       "customPolicy": "FIXED_COMMAND_SCHEMA",
@@ -104,6 +115,75 @@
       "commandUsable": true,
       "addonAuthoringOnly": false,
       "runtimeValidationReliability": "HIGH"
+    },
+    "gamemode_values": {
+      "customPolicy": "VERSIONED_COMMAND_ENUM",
+      "sourceRole": "COMMAND_GRAMMAR_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true,
+      "implementationStatus": "POLICY_ONLY"
+    },
+    "difficulty_values": {
+      "customPolicy": "VERSIONED_COMMAND_ENUM",
+      "sourceRole": "COMMAND_GRAMMAR_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true,
+      "implementationStatus": "POLICY_ONLY"
+    },
+    "weather_values": {
+      "customPolicy": "VERSIONED_COMMAND_ENUM",
+      "sourceRole": "COMMAND_GRAMMAR_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true,
+      "implementationStatus": "POLICY_ONLY"
+    },
+    "fill_modes": {
+      "customPolicy": "VERSIONED_COMMAND_ENUM",
+      "sourceRole": "COMMAND_GRAMMAR_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true,
+      "implementationStatus": "POLICY_ONLY"
+    },
+    "clone_modes": {
+      "customPolicy": "VERSIONED_COMMAND_ENUM",
+      "sourceRole": "COMMAND_GRAMMAR_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH",
+      "versionedByTarget": true,
+      "implementationStatus": "POLICY_ONLY"
+    }
+  },
+  "policyDefinitions": {
+    "VERSIONED_NATIVE_ENUM": {
+      "meaning": "Native values are owned by Mojang/Minecraft, not Add-on authors; the known set may change by Minecraft version/platform.",
+      "directInputPolicy": "Preserve unknown values for forward-version/import compatibility unless command syntax itself is malformed."
+    },
+    "VERSIONED_COMMAND_ENUM": {
+      "meaning": "Fixed choices in Minecraft command grammar; Add-ons do not extend them, but Mojang may change the set by version/platform."
+    },
+    "EXTENSIBLE_NAMESPACED_ID": {
+      "meaning": "Add-ons can define additional command-addressable namespaced content IDs."
+    },
+    "EXTENSIBLE_STRING_ID": {
+      "meaning": "Content can define additional command-addressable string IDs without requiring namespace:path syntax."
+    },
+    "OWNER_SCOPED_ID": {
+      "meaning": "The ID/value belongs to a specific owner such as an Entity; applicability is owner-dependent."
+    },
+    "PROJECT_DEFINED_STRING": {
+      "meaning": "Project/content-defined free string domain used by commands."
+    },
+    "VANILLA_STATE_PLUS_CUSTOM_FALLBACK": {
+      "meaning": "Vanilla state/type/value data is versioned and exact when known; custom blocks/states remain direct-input capable."
     }
   }
 }
