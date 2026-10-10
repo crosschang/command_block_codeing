@@ -2996,3 +2996,4 @@ namespace MCFunctionRegistryLookup {
         return containsSorted(knownItemIds, normalizeVanillaId(value));
     }
 }
+

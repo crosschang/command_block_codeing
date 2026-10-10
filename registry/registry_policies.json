@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "status": "active-authoring-policy",
+  "notes": [
+    "Registry data supports search, autocomplete, metadata, and diagnostics; Minecraft Command AST remains the semantic Source of Truth.",
+    "Pure Command Registry data must not automatically absorb Add-on authoring schemas merely because they exist in Creator documentation.",
+    "Unknown/custom values are preserved when the command domain is extensible or when forward/version compatibility requires Direct Input."
+  ],
+  "registries": {
+    "blocks": {
+      "customPolicy": "EXTENSIBLE_NAMESPACED_ID",
+      "sourceRole": "COMMAND_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "MEDIUM"
+    },
+    "items": {
+      "customPolicy": "EXTENSIBLE_NAMESPACED_ID",
+      "sourceRole": "COMMAND_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "MEDIUM"
+    },
+    "entities": {
+      "customPolicy": "EXTENSIBLE_NAMESPACED_ID",
+      "sourceRole": "COMMAND_ENTITY_TYPE_PRIMARY",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+    },
+    "effects": {
+      "customPolicy": "FIXED_NATIVE_ENUM",
+      "sourceRole": "COMMAND_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH"
+    },
+    "particles": {
+      "customPolicy": "EXTENSIBLE_NAMESPACED_ID",
+      "sourceRole": "VANILLA_RESOURCE_PACK",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "LOW"
+    },
+    "families": {
+      "customPolicy": "PROJECT_DEFINED_STRING",
+      "sourceRole": "VANILLA_BEHAVIOR_DERIVED_SUGGESTIONS",
+      "ownerScope": "Entity",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+    },
+    "entity_events": {
+      "customPolicy": "OWNER_SCOPED_ID",
+      "sourceRole": "VANILLA_BEHAVIOR_DERIVED",
+      "ownerScope": "Entity",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+    },
+    "spawn_events": {
+      "customPolicy": "OWNER_SCOPED_ID",
+      "sourceRole": "ENTITY_EVENTS_WITH_SPAWN_RECOMMENDATION",
+      "ownerScope": "Entity",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+    },
+    "block_states": {
+      "customPolicy": "VANILLA_STATE_PLUS_CUSTOM_FALLBACK",
+      "sourceRole": "VANILLA_BLOCK_RUNTIME_METADATA",
+      "ownerScope": "Block",
+      "valueSchema": ["String", "Number", "Boolean"],
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH_FOR_KNOWN_VANILLA"
+    },
+    "sounds": {
+      "customPolicy": "EXTENSIBLE_STRING_ID",
+      "sourceRole": "VANILLA_RESOURCE_PACK",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "MEDIUM",
+      "requiresNamespace": false
+    },
+    "gamerules": {
+      "customPolicy": "FIXED_NATIVE_ENUM",
+      "sourceRole": "COMMAND_TYPED_ENUM",
+      "valueSchema": ["Boolean", "Integer", "Enum"],
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH"
+    },
+    "enchantments": {
+      "customPolicy": "FIXED_NATIVE_ENUM",
+      "sourceRole": "COMMAND_ENUM",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH"
+    },
+    "selector_filters": {
+      "customPolicy": "FIXED_COMMAND_SCHEMA",
+      "sourceRole": "TARGET_SELECTOR_DOCS",
+      "commandUsable": true,
+      "addonAuthoringOnly": false,
+      "runtimeValidationReliability": "HIGH"
+    }
+  }
+}

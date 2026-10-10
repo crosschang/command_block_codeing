@@ -6,7 +6,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$GeneratorVersion = '12.5.0'
+$GeneratorVersion = '13.0.0'
 if ($ExpectedVersion -and $ExpectedVersion -ne $GeneratorVersion) {
     throw "Registry generator version mismatch. Expected $ExpectedVersion but found $GeneratorVersion."
 }
@@ -217,6 +217,364 @@ function Generate-FlatLibrary($Spec) {
     [void]$Lines.Add('}')
     [void]$Lines.Add('')
     return (($Lines -join "`n") + "`n")
+}
+
+
+function Read-BlockStateRegistry() {
+    $Path = Join-Path $SourceDir 'block_states.json'
+    if (-not (Test-Path $Path)) { throw "Registry source not found: $Path" }
+    $Data = Get-Content -Raw -Encoding UTF8 $Path | ConvertFrom-Json
+    $States = @($Data.states)
+    $Seen = @{}
+    foreach ($State in $States) {
+        $Id = [string]$State.id
+        $Type = [string]$State.type
+        if ([string]::IsNullOrWhiteSpace($Id)) { throw "Empty block-state id in $Path" }
+        if ($Seen.ContainsKey($Id)) { throw "Duplicate block-state id in ${Path}: $Id" }
+        if ($Type -ne 'string' -and $Type -ne 'number' -and $Type -ne 'boolean') {
+            throw "Unsupported block-state type in ${Path}: $Id -> $Type"
+        }
+        if (@($State.values).Count -eq 0) { throw "Block-state has no values in ${Path}: $Id" }
+        $Seen[$Id] = $true
+    }
+    return [ordered]@{ Data=$Data; States=$States }
+}
+
+function Read-ExpandedBlockStateUsage() {
+    $UsagePath = Join-Path $DerivedDir 'block_state_usage.json'
+    if (-not (Test-Path $UsagePath)) { throw "Registry source not found: $UsagePath" }
+    $UsageData = Get-Content -Raw -Encoding UTF8 $UsagePath | ConvertFrom-Json
+
+    $BlockSpec = $FlatSpecs | Where-Object { $_.Kind -eq 'blocks' } | Select-Object -First 1
+    if (-not $BlockSpec) { throw 'Missing blocks flat registry spec.' }
+    $BlockIds = @(Read-FlatRegistryEntries $BlockSpec | ForEach-Object { [string]$_.id })
+
+    $Map = @{}
+    foreach ($Entry in @($UsageData.blocks)) {
+        $States = @($Entry.states | ForEach-Object { [string]$_ })
+        $Targets = @()
+        if ($Entry.PSObject.Properties.Name -contains 'id' -and -not [string]::IsNullOrWhiteSpace([string]$Entry.id)) {
+            $Targets = @([string]$Entry.id)
+        }
+        elseif ($Entry.PSObject.Properties.Name -contains 'pattern' -and -not [string]::IsNullOrWhiteSpace([string]$Entry.pattern)) {
+            $Pattern = [string]$Entry.pattern
+            $Targets = @($BlockIds | Where-Object { $_ -like $Pattern })
+            if ($Targets.Count -eq 0) { throw "Block-state usage pattern matched no blocks: $Pattern" }
+        }
+        else {
+            throw "Block-state usage entry requires id or pattern in $UsagePath"
+        }
+
+        foreach ($BlockId in $Targets) {
+            if (-not $Map.ContainsKey($BlockId)) { $Map[$BlockId] = @{} }
+            foreach ($StateId in $States) {
+                if (-not [string]::IsNullOrWhiteSpace($StateId)) { $Map[$BlockId][$StateId] = $true }
+            }
+        }
+    }
+
+    $Entries = @(
+        $Map.Keys | Sort-Object | ForEach-Object {
+            [ordered]@{
+                id = [string]$_
+                states = @($Map[$_].Keys | Sort-Object)
+            }
+        }
+    )
+    return [ordered]@{ Data=$UsageData; Blocks=$Entries }
+}
+
+function Test-CompleteCoverage($Data, [string]$Prefix) {
+    if ($Data.PSObject.Properties.Name -notcontains 'coverage') { return $false }
+    $Coverage = [string]$Data.coverage
+    return $Coverage.StartsWith($Prefix)
+}
+
+function Get-BlockStateGroup([string]$Role) {
+    if ($Role -eq 'orientation') { return 'ORIENTATION' }
+    if ($Role -eq 'activation') { return 'ACTIVATION' }
+    if ($Role -eq 'structure') { return 'STRUCTURE' }
+    if ($Role -eq 'level') { return 'LEVEL / GROWTH' }
+    if ($Role -eq 'variant') { return 'VARIANT / APPEARANCE' }
+    if ($Role -eq 'special') { return 'SPECIAL / EDUCATION' }
+    return 'OTHER'
+}
+
+function Get-PascalToken([string]$Value) {
+    $Parts = @([regex]::Split((Get-SafeToken $Value), '_+') | Where-Object { $_ })
+    $Out = ''
+    foreach ($Part in $Parts) {
+        if ($Part.Length -eq 1) { $Out += $Part.ToUpperInvariant() }
+        elseif ($Part.Length -gt 1) { $Out += $Part.Substring(0,1).ToUpperInvariant() + $Part.Substring(1) }
+    }
+    if ([string]::IsNullOrWhiteSpace($Out)) { $Out = 'Value' }
+    if ($Out -match '^[0-9]') { $Out = 'V' + $Out }
+    return $Out
+}
+
+function Get-EnumMemberName([object]$Value, [string]$Type) {
+    if ($Type -eq 'number') {
+        $NumberText = [string]$Value
+        if ($NumberText.StartsWith('-')) { return 'VNeg' + $NumberText.Substring(1).Replace('.', '_') }
+        return 'V' + $NumberText.Replace('.', '_')
+    }
+    $Name = Get-PascalToken ([string]$Value)
+    $Lower = $Name.Substring(0,1).ToLowerInvariant() + $Name.Substring(1)
+    if ($ReservedWords.ContainsKey($Lower)) { $Name += 'Value' }
+    return $Name
+}
+
+function Generate-BlockStateRegistryLookup() {
+    $Registry = Read-BlockStateRegistry
+    $Usage = Read-ExpandedBlockStateUsage
+    $States = @($Registry.States | Sort-Object { [string]$_.id })
+    $Blocks = @($Usage.Blocks | Sort-Object { [string]$_.id })
+    $CatalogComplete = Test-CompleteCoverage $Registry.Data 'complete-vanilla'
+    $UsageComplete = Test-CompleteCoverage $Usage.Data 'complete-vanilla'
+    $CatalogLiteral = if ($CatalogComplete) { 'true' } else { 'false' }
+    $UsageLiteral = if ($UsageComplete) { 'true' } else { 'false' }
+
+    $Lines = New-Object 'System.Collections.Generic.List[string]'
+    @(
+        '/**',
+        ' * AUTO-GENERATED FILE. DO NOT EDIT BY HAND.',
+        ' *',
+        ' * Sources:',
+        ' * - registry/source/bedrock/block_states.json',
+        ' * - registry/derived/bedrock/block_state_usage.json',
+        ' * Generator: tools/generate_registry.ps1',
+        ' *',
+        ' * Runtime metadata for context-aware Block State Definition Validation.',
+        ' */',
+        '',
+        'namespace MCFunctionBlockStateRegistry {',
+        '    export enum ValueKind {',
+        '        Unknown = -1,',
+        '        String = 0,',
+        '        Number = 1,',
+        '        Boolean = 2',
+        '    }',
+        '',
+        ('    export function isCatalogComplete(): boolean { return ' + $CatalogLiteral + '; }'),
+        ('    export function isUsageComplete(): boolean { return ' + $UsageLiteral + '; }'),
+        '',
+        '    export function getValueKind(stateId: string): ValueKind {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    foreach ($State in $States) {
+        $Kind = if ([string]$State.type -eq 'string') { 'String' } elseif ([string]$State.type -eq 'number') { 'Number' } else { 'Boolean' }
+        [void]$Lines.Add('        if (stateId == ' + (Quote-JsString ([string]$State.id)) + ') return ValueKind.' + $Kind + ';')
+    }
+    @(
+        '        return ValueKind.Unknown;',
+        '    }',
+        '',
+        '    export function isKnownState(stateId: string): boolean {',
+        '        return getValueKind(stateId) != ValueKind.Unknown;',
+        '    }',
+        '',
+        '    export function isAllowedStringValue(stateId: string, value: string): boolean {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    foreach ($State in @($States | Where-Object { [string]$_.type -eq 'string' })) {
+        $Checks = @($State.values | ForEach-Object { 'value == ' + (Quote-JsString ([string]$_) ) })
+        [void]$Lines.Add('        if (stateId == ' + (Quote-JsString ([string]$State.id)) + ') return ' + ($Checks -join ' || ') + ';')
+    }
+    @(
+        '        return false;',
+        '    }',
+        '',
+        '    export function isAllowedNumberValue(stateId: string, value: number): boolean {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    foreach ($State in @($States | Where-Object { [string]$_.type -eq 'number' })) {
+        $Numbers = @($State.values | ForEach-Object { [double]$_ } | Sort-Object)
+        $IsContiguousInt = $Numbers.Count -gt 1
+        if ($IsContiguousInt) {
+            for ($i = 0; $i -lt $Numbers.Count; $i++) {
+                if ($Numbers[$i] -ne [Math]::Floor($Numbers[$i]) -or ($i -gt 0 -and $Numbers[$i] -ne ($Numbers[$i - 1] + 1))) {
+                    $IsContiguousInt = $false
+                    break
+                }
+            }
+        }
+        if ($IsContiguousInt) {
+            $Check = 'value >= ' + ([string]$Numbers[0]) + ' && value <= ' + ([string]$Numbers[$Numbers.Count - 1]) + ' && Math.floor(value) == value'
+        }
+        else {
+            $Check = (@($State.values | ForEach-Object { 'value == ' + ([string]$_) }) -join ' || ')
+        }
+        [void]$Lines.Add('        if (stateId == ' + (Quote-JsString ([string]$State.id)) + ') return ' + $Check + ';')
+    }
+    @(
+        '        return false;',
+        '    }',
+        '',
+        '    export function isAllowedBooleanValue(stateId: string, value: boolean): boolean {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    foreach ($State in @($States | Where-Object { [string]$_.type -eq 'boolean' })) {
+        $HasFalse = @($State.values | Where-Object { $_ -eq $false }).Count -gt 0
+        $HasTrue = @($State.values | Where-Object { $_ -eq $true }).Count -gt 0
+        $Check = if ($HasFalse -and $HasTrue) { 'true' } elseif ($HasTrue) { 'value' } else { '!value' }
+        [void]$Lines.Add('        if (stateId == ' + (Quote-JsString ([string]$State.id)) + ') return ' + $Check + ';')
+    }
+
+    @(
+        '        return false;',
+        '    }',
+        '',
+        '    let usageBlocks: string[] = ['
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+    foreach ($Block in $Blocks) { [void]$Lines.Add('        ' + (Quote-JsString ([string]$Block.id)) + ',') }
+    @(
+        '    ];',
+        '',
+        '    let usageStateLists: string[] = ['
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+    foreach ($Block in $Blocks) {
+        $StateList = (@($Block.states | ForEach-Object { [string]$_ }) -join ',')
+        [void]$Lines.Add('        ' + (Quote-JsString $StateList) + ',')
+    }
+    @(
+        '    ];',
+        '',
+        '    function normalizeVanillaBlockId(value: string): string {',
+        '        if (!value) return value;',
+        '        if (value.indexOf(":") < 0) return "minecraft:" + value;',
+        '        return value;',
+        '    }',
+        '',
+        '    function findSortedIndex(values: string[], value: string): number {',
+        '        let low = 0;',
+        '        let high = values.length - 1;',
+        '        while (low <= high) {',
+        '            let middle = Math.floor((low + high) / 2);',
+        '            let current = values[middle];',
+        '            if (current == value) return middle;',
+        '            if (current < value) low = middle + 1;',
+        '            else high = middle - 1;',
+        '        }',
+        '        return -1;',
+        '    }',
+        '',
+        '    export function hasUsageForBlock(blockId: string): boolean {',
+        '        return findSortedIndex(usageBlocks, normalizeVanillaBlockId(blockId)) >= 0;',
+        '    }',
+        '',
+        '    export function isStateAllowedForBlock(blockId: string, stateId: string): boolean {',
+        '        let index = findSortedIndex(usageBlocks, normalizeVanillaBlockId(blockId));',
+        '        if (index < 0) return false;',
+        '        let values = "," + usageStateLists[index] + ",";',
+        '        return values.indexOf("," + stateId + ",") >= 0;',
+        '    }',
+        '}',
+        ''
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    return (($Lines -join "`n") + "`n")
+}
+
+function Generate-BlockStateLibrary() {
+    $Registry = Read-BlockStateRegistry
+    $States = @($Registry.States | Sort-Object { [string]$_.id })
+
+    $HandAuthoredIds = @{}
+    @(
+        'pillar_axis', 'minecraft:cardinal_direction', 'minecraft:facing_direction',
+        'facing_direction', 'direction', 'lever_direction', 'open_bit',
+        'button_pressed_bit', 'powered_bit', 'triggered_bit', 'upside_down_bit',
+        'door_hinge_bit', 'upper_block_bit', 'in_wall_bit', 'minecraft:vertical_half'
+    ) | ForEach-Object { $HandAuthoredIds[$_] = $true }
+
+    $Lines = New-Object 'System.Collections.Generic.List[string]'
+    @(
+        '/**',
+        ' * AUTO-GENERATED FILE. DO NOT EDIT BY HAND.',
+        ' *',
+        ' * Source: registry/source/bedrock/block_states.json',
+        ' * Generator: tools/generate_registry.ps1',
+        ' *',
+        ' * Adds typed reporters for vanilla Block States not already covered by the',
+        ' * stable hand-authored reporter API in block_state_library.ts.',
+        ' */',
+        '',
+        'namespace MCFunctionBlockStateLibrary {',
+        ''
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    $GeneratedCount = 0
+    foreach ($State in $States) {
+        $StateId = [string]$State.id
+        if ($HandAuthoredIds.ContainsKey($StateId)) { continue }
+
+        $Type = [string]$State.type
+        $Role = if ($State.PSObject.Properties.Name -contains 'role') { [string]$State.role } else { 'other' }
+        $Group = Get-BlockStateGroup $Role
+        $Token = Get-PascalToken $StateId
+        $FunctionName = 'state' + $Token
+        $EnumName = 'State' + $Token + 'Value'
+        $BlockId = 'mcfunction_block_state_registry_' + (Get-SafeToken $StateId)
+        $Weight = 90 - ($GeneratedCount % 40)
+
+        if ($Type -eq 'string' -or $Type -eq 'number') {
+            [void]$Lines.Add('    export enum ' + $EnumName + ' {')
+            $UsedMembers = @{}
+            $Index = 0
+            foreach ($Value in @($State.values)) {
+                $Member = Get-EnumMemberName $Value $Type
+                if ($UsedMembers.ContainsKey($Member)) { $Member += 'V' + $Index }
+                $UsedMembers[$Member] = $true
+                [void]$Lines.Add('        //% block=' + (Quote-JsString ([string]$Value)))
+                if ($Type -eq 'number') { [void]$Lines.Add('        ' + $Member + ' = ' + ([string]$Value) + ',') }
+                else { [void]$Lines.Add('        ' + $Member + ' = ' + $Index + ',') }
+                $Index++
+            }
+            [void]$Lines.Add('    }')
+            [void]$Lines.Add('')
+        }
+
+        if ($Type -eq 'string') {
+            [void]$Lines.Add('    function text' + $Token + '(value: ' + $EnumName + '): string {')
+            $Index = 0
+            $FirstValue = [string]$State.values[0]
+            $UsedMembers = @{}
+            foreach ($Value in @($State.values)) {
+                $Member = Get-EnumMemberName $Value $Type
+                if ($UsedMembers.ContainsKey($Member)) { $Member += 'V' + $Index }
+                $UsedMembers[$Member] = $true
+                [void]$Lines.Add('        if (value == ' + $EnumName + '.' + $Member + ') return ' + (Quote-JsString ([string]$Value)) + ';')
+                $Index++
+            }
+            [void]$Lines.Add('        return ' + (Quote-JsString $FirstValue) + ';')
+            [void]$Lines.Add('    }')
+            [void]$Lines.Add('')
+        }
+
+        [void]$Lines.Add('    //% group=' + (Quote-JsString $Group))
+        [void]$Lines.Add('    //% weight=' + $Weight)
+        [void]$Lines.Add('    //% blockId=' + $BlockId)
+        [void]$Lines.Add('    //% block=' + (Quote-JsString ($StateId + ' $value')))
+        if ($Type -eq 'boolean') {
+            [void]$Lines.Add('    export function ' + $FunctionName + '(value: MCFunctionFields.BooleanLiteral): MCFunctionBlockStateFields.BlockStateEntryValue {')
+            [void]$Lines.Add('        return MCFunctionBlockStateFields.entry(MCFunctionAST.createBooleanBlockState(' + (Quote-JsString $StateId) + ', MCFunctionFields.booleanLiteralValue(value)));')
+        }
+        elseif ($Type -eq 'number') {
+            [void]$Lines.Add('    export function ' + $FunctionName + '(value: ' + $EnumName + '): MCFunctionBlockStateFields.BlockStateEntryValue {')
+            [void]$Lines.Add('        return MCFunctionBlockStateFields.entry(MCFunctionAST.createNumberBlockState(' + (Quote-JsString $StateId) + ', value));')
+        }
+        else {
+            [void]$Lines.Add('    export function ' + $FunctionName + '(value: ' + $EnumName + '): MCFunctionBlockStateFields.BlockStateEntryValue {')
+            [void]$Lines.Add('        return MCFunctionBlockStateFields.entry(MCFunctionAST.createStringBlockState(' + (Quote-JsString $StateId) + ', text' + $Token + '(value)));')
+        }
+        [void]$Lines.Add('    }')
+        [void]$Lines.Add('')
+        $GeneratedCount++
+    }
+
+    [void]$Lines.Add('}')
+    [void]$Lines.Add('')
+    return [ordered]@{ Text=(($Lines -join "`n") + "`n"); Count=$GeneratedCount }
 }
 
 function Generate-RegistryLookup() {
@@ -440,6 +798,28 @@ if ($LookupActual -ne $LookupExpected) {
     [void]$Changed.Add($LookupOutPath.Substring($Root.Length + 1))
     if (-not $Check) { [System.IO.File]::WriteAllText($LookupOutPath, $LookupExpected, $Utf8NoBom) }
 }
+
+
+$BlockStateLookupOutDir = Join-Path $Root 'src\registry'
+if (-not (Test-Path $BlockStateLookupOutDir)) { New-Item -ItemType Directory -Force -Path $BlockStateLookupOutDir | Out-Null }
+$BlockStateLookupPath = Join-Path $BlockStateLookupOutDir 'block_state_registry.generated.ts'
+$BlockStateLookupExpected = Generate-BlockStateRegistryLookup
+$BlockStateLookupActual = if (Test-Path $BlockStateLookupPath) { [System.IO.File]::ReadAllText($BlockStateLookupPath) } else { $null }
+if ($BlockStateLookupActual -ne $BlockStateLookupExpected) {
+    [void]$Changed.Add($BlockStateLookupPath.Substring($Root.Length + 1))
+    if (-not $Check) { [System.IO.File]::WriteAllText($BlockStateLookupPath, $BlockStateLookupExpected, $Utf8NoBom) }
+}
+
+$BlockStateLibraryGenerated = Generate-BlockStateLibrary
+$BlockStateLibraryPath = Join-Path $OutDir 'block_state_library.generated.ts'
+$BlockStateLibraryActual = if (Test-Path $BlockStateLibraryPath) { [System.IO.File]::ReadAllText($BlockStateLibraryPath) } else { $null }
+if ($BlockStateLibraryActual -ne $BlockStateLibraryGenerated.Text) {
+    [void]$Changed.Add($BlockStateLibraryPath.Substring($Root.Length + 1))
+    if (-not $Check) { [System.IO.File]::WriteAllText($BlockStateLibraryPath, $BlockStateLibraryGenerated.Text, $Utf8NoBom) }
+}
+$BlockStateCountData = Read-BlockStateRegistry
+$Counts['block_states'] = @($BlockStateCountData.States).Count
+$Counts['block_state_reporters'] = $BlockStateLibraryGenerated.Count
 
 $GroupedSpecs = @(
     [ordered]@{ Kind='entity_events'; Namespace='MCFunctionEntityEventLibrary'; Category='EVENT'; Prefix='event'; BlockIdPrefix='mcfunction_entity_event'; Color='#E67E22'; Weight=83; Icon='\uf0e7'; File='entity_event_library.generated.ts' },

@@ -289,15 +289,82 @@ namespace MCFunctionValidator {
         }
     }
 
+    function blockStateKindName(kind: MCFunctionBlockStateRegistry.ValueKind): string {
+        if (kind == MCFunctionBlockStateRegistry.ValueKind.String) return "text";
+        if (kind == MCFunctionBlockStateRegistry.ValueKind.Number) return "number";
+        if (kind == MCFunctionBlockStateRegistry.ValueKind.Boolean) return "boolean";
+        return "unknown";
+    }
+
+    function astBlockStateKind(
+        entry: MCFunctionAST.BlockStateEntry
+    ): MCFunctionBlockStateRegistry.ValueKind {
+        if (entry.kind == MCFunctionAST.BlockStateValueKind.String) {
+            return MCFunctionBlockStateRegistry.ValueKind.String;
+        }
+        if (entry.kind == MCFunctionAST.BlockStateValueKind.Number) {
+            return MCFunctionBlockStateRegistry.ValueKind.Number;
+        }
+        if (entry.kind == MCFunctionAST.BlockStateValueKind.Boolean) {
+            return MCFunctionBlockStateRegistry.ValueKind.Boolean;
+        }
+        return MCFunctionBlockStateRegistry.ValueKind.Unknown;
+    }
+
+    function validateKnownBlockStateValue(
+        entry: MCFunctionAST.BlockStateEntry,
+        issues: ValidationIssue[]
+    ): void {
+        let expected = MCFunctionBlockStateRegistry.getValueKind(entry.key);
+        if (expected == MCFunctionBlockStateRegistry.ValueKind.Unknown) return;
+
+        let actual = astBlockStateKind(entry);
+        if (actual != expected) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "BLOCK_STATE_TYPE_MISMATCH",
+                "Block state " + entry.key + " requires a " + blockStateKindName(expected) + " value."
+            );
+            return;
+        }
+
+        let allowed = false;
+        if (actual == MCFunctionBlockStateRegistry.ValueKind.String) {
+            allowed = MCFunctionBlockStateRegistry.isAllowedStringValue(entry.key, entry.stringValue);
+        } else if (actual == MCFunctionBlockStateRegistry.ValueKind.Number) {
+            allowed = MCFunctionBlockStateRegistry.isAllowedNumberValue(entry.key, entry.numberValue);
+        } else if (actual == MCFunctionBlockStateRegistry.ValueKind.Boolean) {
+            allowed = MCFunctionBlockStateRegistry.isAllowedBooleanValue(entry.key, entry.booleanValue);
+        }
+
+        if (!allowed) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "BLOCK_STATE_VALUE_INVALID",
+                "Block state " + entry.key + " has a value outside the current Bedrock Registry values."
+            );
+        }
+    }
+
     export function validateBlockStates(
-        states: MCFunctionAST.BlockStates
+        states: MCFunctionAST.BlockStates,
+        blockId?: string
     ): ValidationIssue[] {
         let issues: ValidationIssue[] = [];
+        let canCheckVanillaBlock = false;
+        let contextBlockId = blockId || "";
+
+        if (contextBlockId && isSafeIdToken(contextBlockId) && !MCFunctionRegistryLookup.isCustomNamespace(contextBlockId)) {
+            canCheckVanillaBlock = MCFunctionRegistryLookup.isKnownBlock(contextBlockId);
+        }
 
         for (let i = 0; i < states.entries.length; i++) {
             let entry = states.entries[i];
+            let safeKey = isSafeIdToken(entry.key);
 
-            if (!isSafeIdToken(entry.key)) {
+            if (!safeKey) {
                 addIssue(
                     issues,
                     ValidationLevel.Error,
@@ -342,6 +409,32 @@ namespace MCFunctionValidator {
                     "Block-state text cannot contain tab or line-break characters."
                 );
             }
+
+            if (safeKey) {
+                if (MCFunctionBlockStateRegistry.isKnownState(entry.key)) {
+                    validateKnownBlockStateValue(entry, issues);
+
+                    if (
+                        canCheckVanillaBlock &&
+                        MCFunctionBlockStateRegistry.hasUsageForBlock(contextBlockId) &&
+                        !MCFunctionBlockStateRegistry.isStateAllowedForBlock(contextBlockId, entry.key)
+                    ) {
+                        addIssue(
+                            issues,
+                            ValidationLevel.Warning,
+                            "BLOCK_STATE_NOT_APPLICABLE",
+                            "Block state " + entry.key + " is not listed for " + contextBlockId + " in the current vanilla block metadata."
+                        );
+                    }
+                } else if (canCheckVanillaBlock && MCFunctionBlockStateRegistry.isCatalogComplete()) {
+                    addIssue(
+                        issues,
+                        ValidationLevel.Warning,
+                        "BLOCK_STATE_UNKNOWN",
+                        "Block state " + entry.key + " is not present in the current vanilla Block State Registry. Preview and export will continue."
+                    );
+                }
+            }
         }
 
         return issues;
@@ -361,7 +454,7 @@ namespace MCFunctionValidator {
         }
 
         if (command.blockStates) {
-            appendIssues(issues, validateBlockStates(command.blockStates));
+            appendIssues(issues, validateBlockStates(command.blockStates, command.blockId));
         }
 
         if (
@@ -391,7 +484,7 @@ namespace MCFunctionValidator {
         }
 
         if (command.blockStates) {
-            appendIssues(issues, validateBlockStates(command.blockStates));
+            appendIssues(issues, validateBlockStates(command.blockStates, command.blockId));
         }
 
         if (
@@ -420,7 +513,7 @@ namespace MCFunctionValidator {
         }
 
         if (command.replaceBlockStates) {
-            appendIssues(issues, validateBlockStates(command.replaceBlockStates));
+            appendIssues(issues, validateBlockStates(command.replaceBlockStates, command.replaceBlockId));
         }
 
         return issues;
@@ -466,7 +559,7 @@ namespace MCFunctionValidator {
         }
 
         if (command.filterBlockStates) {
-            appendIssues(issues, validateBlockStates(command.filterBlockStates));
+            appendIssues(issues, validateBlockStates(command.filterBlockStates, command.filterBlockId));
         }
 
         return issues;

@@ -5,12 +5,12 @@
  * inputs in MCFunctionBlockStateFields remain available for custom namespaces
  * and states that are not yet represented here.
  *
- * Built-in vanilla blocks may use legacy numeric states such as
- * `facing_direction`, while custom/newer blocks can use namespaced string states
- * such as `minecraft:facing_direction`. They are intentionally separate.
+ * Exact state IDs are preserved. Vanilla blocks can use both unnamespaced states
+ * such as `facing_direction` and namespaced states such as
+ * `minecraft:facing_direction`; namespace presence alone does not mean Add-on-only.
  */
 //% color="#58708A" weight=85 icon="\uf1b2" block="BLOCK STATE LIBRARY"
-//% groups='["ORIENTATION", "ACTIVATION", "STRUCTURE", "CUSTOM"]'
+//% groups='["ORIENTATION", "ACTIVATION", "STRUCTURE", "LEVEL / GROWTH", "VARIANT / APPEARANCE", "SPECIAL / EDUCATION", "OTHER", "CUSTOM"]'
 namespace MCFunctionBlockStateLibrary {
     export enum PillarAxis {
         //% block="x"

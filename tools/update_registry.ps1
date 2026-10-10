@@ -26,6 +26,7 @@ $Urls = [ordered]@{
     entity_events    = 'https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/enums/EntityEvents.md'
     particles_api    = 'https://api.github.com/repos/Mojang/bedrock-samples/contents/resource_pack/particles?ref=main'
     entity_files_api = 'https://api.github.com/repos/Mojang/bedrock-samples/contents/behavior_pack/entities?ref=main'
+    block_metadata    = 'https://raw.githubusercontent.com/Mojang/bedrock-samples/main/metadata/vanilladata_modules/mojang-blocks.json'
 }
 
 function Get-WebText([string]$Url) {
@@ -127,7 +128,7 @@ function Get-UniqueOrdered([object[]]$Values) {
             [void]$Result.Add($Text)
         }
     }
-    return @($Result)
+    return $Result.ToArray()
 }
 
 function Parse-NamespacedEnum([string]$Markdown) {
@@ -153,7 +154,7 @@ function Parse-Entities([string]$Markdown) {
         if ($Identifier -eq 'undefined_test_only') { continue }
         [void]$Out.Add('minecraft:' + $Identifier)
     }
-    return @(Get-UniqueOrdered $Out)
+    return @(Get-UniqueOrdered $Out.ToArray())
 }
 
 function Get-MarkdownBacktickListValues([string]$Markdown, [string]$ValuesHeadingRegex, [string]$ValueRegex) {
@@ -217,7 +218,7 @@ function Parse-Particles {
             Write-Warning "Particle parse failed: $($Entry.name): $($_.Exception.Message)"
         }
     }
-    return @(Get-UniqueOrdered $Out)
+    return @(Get-UniqueOrdered $Out.ToArray())
 }
 
 function Collect-TypeFamilies([object]$Node, [hashtable]$FamilySet) {
@@ -404,6 +405,172 @@ function Get-VanillaEntityDerivedData {
     }
 }
 
+
+function Get-BlockStateRole([string]$StateId) {
+    $Id = $StateId.ToLowerInvariant()
+
+    if (
+        $Id.Contains('direction') -or $Id.Contains('axis') -or $Id.Contains('rotation') -or
+        $Id.Contains('facing') -or $Id.Contains('face') -or $Id.Contains('attachment') -or
+        $Id.Contains('hanging')
+    ) { return 'orientation' }
+
+    if (
+        $Id.Contains('open') -or $Id.Contains('powered') -or $Id.Contains('triggered') -or
+        $Id.Contains('pressed') -or $Id.Contains('redstone') -or $Id.Contains('signal') -or
+        $Id.Contains('lit') -or $Id.Contains('active') -or $Id.Contains('crafting')
+    ) { return 'activation' }
+
+    if (
+        $Id.Contains('wall') -or $Id.Contains('upper') -or $Id.Contains('lower') -or
+        $Id.Contains('upside') -or $Id.Contains('hinge') -or $Id.Contains('half') -or
+        $Id.Contains('connection') -or $Id.Contains('shape') -or $Id.Contains('post')
+    ) { return 'structure' }
+
+    if (
+        $Id.Contains('age') -or $Id.Contains('growth') -or $Id.Contains('level') -or
+        $Id.Contains('count') -or $Id.Contains('stage') -or $Id.Contains('progress') -or
+        $Id.Contains('moist') -or $Id.Contains('books_stored') -or $Id.Contains('candles')
+    ) { return 'level' }
+
+    if (
+        $Id.Contains('color') -or $Id.Contains('type') -or $Id.Contains('variant') -or
+        $Id.Contains('material') -or $Id.Contains('thickness') -or $Id.Contains('damage') -or
+        $Id.Contains('flower') -or $Id.Contains('wood') -or $Id.Contains('stone')
+    ) { return 'variant' }
+
+    if ($Id.Contains('chemistry') -or $Id.Contains('allow_underwater') -or $Id.Contains('deprecated')) {
+        return 'special'
+    }
+
+    return 'other'
+}
+
+function Get-VanillaBlockStateDerivedData {
+    Write-Host 'Downloading Mojang vanilla block metadata...'
+    $Metadata = Get-WebText $Urls.block_metadata | ConvertFrom-Json
+    $Properties = @($Metadata.block_properties)
+    $DataItems = @($Metadata.data_items)
+
+    if ($Properties.Count -lt 100) {
+        throw "Block metadata contains only $($Properties.Count) block properties; expected at least 100."
+    }
+    if ($DataItems.Count -lt 500) {
+        throw "Block metadata contains only $($DataItems.Count) data items; expected at least 500."
+    }
+
+    $PropertyMap = @{}
+    foreach ($Property in $Properties) {
+        $Name = [string]$Property.name
+        if ([string]::IsNullOrWhiteSpace($Name)) { continue }
+        $PropertyMap[$Name] = $Property
+    }
+
+    $UsedStateSet = @{}
+    $BlockEntries = New-Object 'System.Collections.Generic.List[object]'
+    $RelationCount = 0
+
+    foreach ($Item in $DataItems) {
+        $BlockId = [string]$Item.name
+        if ($BlockId -notmatch '^[a-z0-9_.-]+:[a-z0-9_./-]+$') { continue }
+
+        $StateNames = New-Object 'System.Collections.Generic.List[string]'
+        $SeenState = @{}
+        foreach ($PropertyRef in @($Item.properties)) {
+            $StateId = [string]$PropertyRef.name
+            if ([string]::IsNullOrWhiteSpace($StateId)) { continue }
+            if (-not $PropertyMap.ContainsKey($StateId)) {
+                throw "Block $BlockId references missing block property $StateId."
+            }
+            if (-not $SeenState.ContainsKey($StateId)) {
+                $SeenState[$StateId] = $true
+                $UsedStateSet[$StateId] = $true
+                [void]$StateNames.Add($StateId)
+                $RelationCount++
+            }
+        }
+
+        [void]$BlockEntries.Add([ordered]@{
+            id = $BlockId
+            states = @($StateNames.ToArray() | Sort-Object)
+        })
+    }
+
+    $StateEntries = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($StateId in @($UsedStateSet.Keys | Sort-Object)) {
+        $Property = $PropertyMap[$StateId]
+        $RawType = [string]$Property.type
+        $Type = if ($RawType -eq 'bool') { 'boolean' } elseif ($RawType -eq 'int') { 'number' } elseif ($RawType -eq 'string') { 'string' } else { '' }
+        if ([string]::IsNullOrWhiteSpace($Type)) {
+            throw "Unsupported block property type $RawType for $StateId."
+        }
+
+        $Values = @($Property.values | ForEach-Object { $_.value })
+        if ($Values.Count -eq 0) {
+            throw "Block property $StateId has no allowed values."
+        }
+
+        [void]$StateEntries.Add([ordered]@{
+            id = $StateId
+            type = $Type
+            values = $Values
+            role = Get-BlockStateRole $StateId
+        })
+    }
+
+    return [ordered]@{
+        # PowerShell 5.1 can throw "Argument types do not match" when an
+        # array subexpression wraps Generic.List[object] directly. Materialize
+        # the generic lists as CLR arrays before placing them in OrderedDictionary.
+        States = $StateEntries.ToArray()
+        Blocks = @($BlockEntries.ToArray() | Sort-Object { [string]$_.id })
+        RelationCount = $RelationCount
+        RawPropertyCount = $Properties.Count
+        DataItemCount = $DataItems.Count
+    }
+}
+
+function New-BlockStateSourceObject([object[]]$States) {
+    return [ordered]@{
+        schemaVersion = 2
+        platform = 'bedrock'
+        coverage = 'complete-vanilla-used-properties'
+        source = [ordered]@{
+            kind = 'vanilla-block-metadata-used-properties-derived'
+            provider = 'Mojang/bedrock-samples'
+            url = $Urls.block_metadata
+            fetchedAtUtc = [DateTime]::UtcNow.ToString('o')
+        }
+        notes = @(
+            'Contains only block properties actually referenced by vanilla data_items; Add-on-only definitions are not imported merely because a Creator schema defines them.',
+            'Exact state ID, value type, and allowed values are preserved from Mojang metadata.',
+            'Role is authoring UI metadata only and is not AST command meaning.',
+            'Custom block/state Direct Input remains supported.'
+        )
+        states = @($States)
+    }
+}
+
+function New-BlockStateUsageSourceObject([object[]]$Blocks) {
+    return [ordered]@{
+        schemaVersion = 2
+        platform = 'bedrock'
+        coverage = 'complete-vanilla-block-usage'
+        source = [ordered]@{
+            kind = 'vanilla-block-metadata-usage-derived'
+            provider = 'Mojang/bedrock-samples'
+            url = $Urls.block_metadata
+            fetchedAtUtc = [DateTime]::UtcNow.ToString('o')
+        }
+        notes = @(
+            'Maps every parsed vanilla block data_item to the block properties actually attached to that block.',
+            'Used for context-aware diagnostics; Registry data does not replace Minecraft Runtime as final content authority.',
+            'Custom blocks are not hard-blocked by this vanilla usage map.'
+        )
+        blocks = @($Blocks)
+    }
+}
+
 function Load-OldIds([string]$Directory, [string]$Kind) {
     $Path = Join-Path $Directory ($Kind + '.json')
     if (-not (Test-Path $Path)) { return @() }
@@ -426,7 +593,7 @@ function Load-OldRelations([string]$Kind) {
                 [void]$Out.Add($EntityId + ' -> ' + [string]$EventId)
             }
         }
-        return @($Out)
+        return $Out.ToArray()
     }
     catch { return @() }
 }
@@ -439,7 +606,7 @@ function Convert-Relations([object[]]$EntityEntries) {
             [void]$Out.Add($EntityId + ' -> ' + [string]$EventId)
         }
     }
-    return @($Out)
+    return $Out.ToArray()
 }
 
 function Show-Diff([string]$Kind, [string[]]$Old, [string[]]$New) {
@@ -542,6 +709,7 @@ $Data.particles = @(Parse-Particles)
 $OfficialEntityEvents = @(Parse-EntityEventsEnum (Get-WebText $Urls.entity_events))
 
 $Derived = Get-VanillaEntityDerivedData
+$BlockStateDerived = Get-VanillaBlockStateDerivedData
 $FamilyIds = @($Derived.Families | ForEach-Object { [string]$_.id })
 $EntityRelations = @(Convert-Relations @($Derived.EntityEvents))
 $SpawnRelations = @(Convert-Relations @($Derived.SpawnEvents))
@@ -567,6 +735,15 @@ if ($Derived.EntityEventRelationCount -lt 200) {
 if ($Derived.SpawnEventRelationCount -lt 20) {
     throw "Only $($Derived.SpawnEventRelationCount) spawn-event relations derived; expected at least 20. No files written."
 }
+if ($BlockStateDerived.States.Count -lt 100) {
+    throw "Only $($BlockStateDerived.States.Count) command-relevant block states derived; expected at least 100. No files written."
+}
+if ($BlockStateDerived.Blocks.Count -lt 500) {
+    throw "Only $($BlockStateDerived.Blocks.Count) vanilla block usage records derived; expected at least 500. No files written."
+}
+if ($BlockStateDerived.RelationCount -lt 500) {
+    throw "Only $($BlockStateDerived.RelationCount) block/state relations derived; expected at least 500. No files written."
+}
 
 Write-Host ''
 Write-Host 'Diff:'
@@ -579,6 +756,9 @@ Show-Diff 'spawn_events' @(Load-OldRelations 'spawn_events') @($SpawnRelations)
 Write-Host ('{0,-14}: {1}' -f 'official events', $OfficialEntityEvents.Count)
 Write-Host ('{0,-14}: {1}' -f 'entity files', $Derived.ParsedEntityFiles)
 Write-Host ('{0,-14}: {1}' -f 'spawn refs', $Derived.SpawnEventReferenceCount)
+Write-Host ('{0,-14}: {1}' -f 'block states', $BlockStateDerived.States.Count)
+Write-Host ('{0,-14}: {1}' -f 'block usage', $BlockStateDerived.Blocks.Count)
+Write-Host ('{0,-14}: {1}' -f 'state links', $BlockStateDerived.RelationCount)
 
 if (-not $Apply) {
     Write-Host ''
@@ -624,6 +804,20 @@ $EventObject = New-EventSourceObject @($Derived.EntityEvents) 'event'
     $Utf8NoBom
 )
 
+$BlockStateObject = New-BlockStateSourceObject @($BlockStateDerived.States)
+[System.IO.File]::WriteAllText(
+    (Join-Path $SourceDir 'block_states.json'),
+    (($BlockStateObject | ConvertTo-Json -Depth 20) + "`n"),
+    $Utf8NoBom
+)
+
+$BlockStateUsageObject = New-BlockStateUsageSourceObject @($BlockStateDerived.Blocks)
+[System.IO.File]::WriteAllText(
+    (Join-Path $DerivedDir 'block_state_usage.json'),
+    (($BlockStateUsageObject | ConvertTo-Json -Depth 20) + "`n"),
+    $Utf8NoBom
+)
+
 # `/event` and `/summon ... spawnEvent` share the EntityEvents command argument domain,
 # but the SPAWN EVENT Library intentionally exposes only evidence-backed spawn-oriented events.
 $SpawnObject = New-EventSourceObject @($Derived.SpawnEvents) 'spawn'
@@ -635,7 +829,7 @@ $SpawnObject = New-EventSourceObject @($Derived.SpawnEvents) 'spawn'
 
 if (-not $SkipGenerate) {
     & (Join-Path $PSScriptRoot 'generate_registry.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (-not $?) { throw 'Registry generation failed.' }
 }
 
 Write-Host 'Registry update complete. Review git diff before commit.'

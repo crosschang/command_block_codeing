@@ -5,7 +5,7 @@
                    "kind":  "command-enum-effect",
                    "provider":  "MicrosoftDocs/minecraft-creator",
                    "url":  "https://raw.githubusercontent.com/MicrosoftDocs/minecraft-creator/refs/heads/main/creator/Commands/commands/effect.md",
-                   "fetchedAtUtc":  "2026-10-05T11:10:34.4823930Z"
+                   "fetchedAtUtc":  "2026-10-10T06:22:05.2558219Z"
                },
     "notes":  [
                   "Effect command tokens do not use minecraft: namespace."

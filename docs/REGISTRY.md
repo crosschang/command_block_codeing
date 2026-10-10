@@ -12,20 +12,22 @@ The Registry is **search/autocomplete data**, not Minecraft command meaning. Com
 - Families
 - Events
 - Spawn Events
-- Block States (initial verified common-state catalog)
+- Block States (typed command Registry + custom fallback)
 
 There is no Quick Preset layer. Direct/custom input remains available, including custom namespaces, custom families, and custom behavior-pack events. Registry data is never a whitelist.
 
 ## Source vs derived data
 
 ```text
-registry/source/bedrock/
-├─ items.json
-├─ blocks.json
-├─ block_states.json
-├─ entities.json
-├─ effects.json
-└─ particles.json
+registry/
+├─ registry_policies.json
+├─ source/bedrock/
+│  ├─ items.json
+│  ├─ blocks.json
+│  ├─ block_states.json
+│  ├─ entities.json
+│  ├─ effects.json
+│  └─ particles.json
 
 registry/derived/bedrock/
 ├─ families.json
@@ -113,25 +115,43 @@ If Windows blocks `.ps1` execution, use the included `.cmd` wrappers (they use `
 
 No Python installation is required.
 
-## Block State Library (initial phase)
+## Block State Registry and Library
 
 Block states are shared authoring data for SETBLOCK / FILL / CLONE and future
-`execute if/unless block`. The runtime AST still accepts direct/custom states.
-The initial library exposes verified common orientation, activation, and structure
-states (for example `pillar_axis`, `lever_direction`, `open_bit`,
-`button_pressed_bit`, and `upside_down_bit`) while the registry relationship
-snapshot is expanded from official block listings.
+`execute if/unless block`. The runtime AST always keeps typed state values and
+direct/custom fallback.
 
-Important: block-state value types are version/data sensitive. Do not infer a
-state type from its name. Keep legacy/current state IDs distinct until the
-target Bedrock/Education version is verified through official data or runtime
-tests.
+Pure Command Registry generation uses Mojang `mojang-blocks.json` in two passes:
 
-The initial `block_state_usage.json` is representative, not exhaustive, so it
-must not yet be used as a hard whitelist for all vanilla blocks.
+```text
+vanilla data_items
+→ collect the properties actually attached to vanilla blocks
+→ resolve only those properties in block_properties
+→ preserve exact state ID / type / allowed values
+```
 
-The first Block State Library is hand-authored from the verified registry snapshot
-because state reporters need typed dropdowns (string/number/boolean) rather than the
-flat generated-ID pattern used by items/blocks/entities. Generator integration
-for the complete state catalog is a later registry phase; the JSON snapshots are
-the data source and direct/custom input remains available.
+Do not infer Add-on-only status from a `minecraft:` prefix. Vanilla blocks can
+use both namespaced and unnamespaced state IDs.
+
+`block_states.json` records state definitions.
+`block_state_usage.json` records block → applicable-state relationships.
+The updater marks generated complete snapshots with coverage metadata; the
+validator uses that metadata to avoid overclaiming when an older representative
+snapshot is loaded.
+
+The stable common reporter APIs remain hand-authored so existing saved Blocks do
+not break. `block_state_library.generated.ts` adds typed reporters for additional
+vanilla states after Registry update.
+
+Generated Runtime metadata in `block_state_registry.generated.ts` supports:
+
+```text
+state value-kind validation
+allowed-value validation
+block/state applicability WARNING
+complete-vs-representative coverage awareness
+```
+
+Registry applicability is a diagnostic aid, not a replacement for Minecraft
+Runtime. Custom Block IDs and Custom Block States remain available through
+Direct Input.
