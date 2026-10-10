@@ -223,3 +223,76 @@ Verified Education/MakeCode behavior used by the adapter:
 Preview-only temporary tags use the `cbc_p_*` prefix and are removed after each
 emulated summon. The exported `.mcfunction` never contains those tag/TP helper
 commands.
+
+## Education 26.32 spawn-event orientation requirement
+
+Runtime verification on 2026-10-10 showed that Minecraft Education 26.32 rejected:
+
+```mcfunction
+summon minecraft:cow ~ ~ ~3 minecraft:entity_born
+```
+
+while the explicit-rotation form succeeded and spawned a baby cow:
+
+```mcfunction
+summon minecraft:cow ~ ~ ~3 ~ ~ minecraft:entity_born
+```
+
+For ADVANCED SUMMON, `No Orientation` remains a valid explicit choice when no
+spawn event is present. When a spawn event is present, Definition Validation
+requires one of the real orientation reporters:
+
+```text
+Rotation
+Facing Position
+Facing Entity
+```
+
+The compiler does not silently synthesize `~ ~` for a user-selected
+`No Orientation`, because that would add an orientation meaning that is not
+represented in the AST.
+
+Definition Validation emits:
+
+```text
+ERROR SUMMON_ORIENTATION_REQUIRED_FOR_EVENT
+```
+
+and the FunctionFile is not registered/exported until an explicit orientation is
+selected.
+
+Preview emulation for an already-explicit Rotation/Facing command may use an
+internal relative `~ ~` intermediate summon so `player.execute()` can carry the
+spawn event, then applies the user's actual orientation through TP. This is
+Preview-only and does not alter canonical export semantics.
+
+## NameTag-only overload clarification (0.0.39)
+
+Minecraft Bedrock/Education has a separate NameTag overload:
+
+```text
+summon <entity> <nameTag> [spawnPos]
+```
+
+Therefore:
+
+```text
+No Orientation + no spawnEvent + no nameTag
+→ VALID
+→ summon <entity> <spawnPos>
+
+No Orientation + no spawnEvent + nameTag
+→ VALID
+→ summon <entity> <nameTag> <spawnPos>
+
+No Orientation + spawnEvent + no nameTag
+→ ERROR SUMMON_ORIENTATION_REQUIRED_FOR_EVENT
+
+No Orientation + spawnEvent + nameTag
+→ ERROR SUMMON_ORIENTATION_REQUIRED_FOR_EVENT
+```
+
+The compiler must not synthesize Rotation for the NameTag-only case.
+When a spawn event is present, users must choose Rotation, Facing Position,
+or Facing Entity explicitly.
+

@@ -536,7 +536,7 @@ namespace MCFunctionCompiler {
         let result = "summon " + command.entityId;
 
         if (command.form == MCFunctionAST.SummonForm.Simple) {
-            // Bedrock simple overload:
+            // Bedrock name-tag overload:
             // summon <entity> <nameTag> [spawnPos]
             // Name may be empty; a position without a name uses the normal spawnPos overload.
             if (command.nameTag && command.nameTag.length > 0) {
@@ -547,6 +547,26 @@ namespace MCFunctionCompiler {
                 result = result + " " + compilePosition(command.spawnPosition);
             }
 
+            return result;
+        }
+
+        let hasSpawnEvent = !!command.spawnEvent && command.spawnEvent.length > 0;
+        let hasNameTag = !!command.nameTag && command.nameTag.length > 0;
+        let hasNoOrientation =
+            !command.orientation ||
+            command.orientation.kind == MCFunctionAST.SummonOrientationKind.None;
+
+        // Bedrock/Education has a separate name-tag overload:
+        // summon <entity> <nameTag> [spawnPos]
+        //
+        // When ADVANCED explicitly selects No Orientation and has no spawnEvent,
+        // preserve that meaning by selecting this overload instead of emitting
+        // position + synthetic event/rotation placeholders.
+        if (hasNoOrientation && !hasSpawnEvent && hasNameTag) {
+            result = result + " " + quoteCommandString(command.nameTag);
+            if (command.spawnPosition) {
+                result = result + " " + compilePosition(command.spawnPosition);
+            }
             return result;
         }
 

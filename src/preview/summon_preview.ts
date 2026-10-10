@@ -102,13 +102,22 @@ namespace MCFunctionPreview {
             " add " + oldTag
         );
 
-        // player.execute() accepts ADVANCED position/event/name forms, but not
-        // the modern rotation/facing overloads. Compile an orientation-free
-        // preview summon while preserving all other SUMMON semantics.
+        // player.execute() does not accept the modern Rotation/Facing SUMMON
+        // overloads used by the canonical command. When a spawnEvent is present,
+        // Education needs explicit rotation slots before the event token. Use a
+        // PREVIEW-only relative 0/0 rotation for this intermediate summon, then
+        // apply the user's actual Rotation/Facing through TP below.
+        let previewOrientation = MCFunctionAST.createSummonNoOrientation();
+        if (command.spawnEvent && command.spawnEvent.length > 0) {
+            previewOrientation = MCFunctionAST.createSummonRotationOrientation(
+                MCFunctionAST.createRelativeRotation(0, 0)
+            );
+        }
+
         let previewSummon = MCFunctionAST.createSummonAdvancedCommand(
             command.entityId,
             command.spawnPosition,
-            MCFunctionAST.createSummonNoOrientation(),
+            previewOrientation,
             command.spawnEvent,
             command.nameTag
         );

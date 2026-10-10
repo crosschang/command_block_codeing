@@ -1111,6 +1111,20 @@ namespace MCFunctionValidator {
 
         validateSummonOrientation(command.orientation, issues);
 
+        let hasSpawnEvent = !!command.spawnEvent && command.spawnEvent.length > 0;
+        if (
+            command.orientation &&
+            command.orientation.kind == MCFunctionAST.SummonOrientationKind.None &&
+            hasSpawnEvent
+        ) {
+            addIssue(
+                issues,
+                ValidationLevel.Error,
+                "SUMMON_ORIENTATION_REQUIRED_FOR_EVENT",
+                "SUMMON with a spawn event requires an explicit orientation. Choose Rotation, Facing Position, or Facing Entity instead of No Orientation."
+            );
+        }
+
         if (command.spawnEvent && command.spawnEvent.length > 0) {
             if (!isSafeIdToken(command.spawnEvent)) {
                 addIssue(
