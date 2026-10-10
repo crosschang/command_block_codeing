@@ -343,15 +343,23 @@ namespace FunctionFile {
         let valid = !structureError && errorCount == 0;
 
         if (errorCount == 0 && warningCount == 0 && infoCount == 0) {
-            MCFunctionPreview.previewSay(
-                "mcfunction " + name + ": OK."
-            );
+            MCFunctionPreview.previewSay(name + ": OK.");
             return;
         }
 
-        let summary =
-            "mcfunction " + name + ": errors " + errorCount +
-            " warnings " + warningCount + " info " + infoCount + ".";
+        let summary = name + ":";
+        if (errorCount > 0) {
+            summary = summary + " " + errorCount +
+                (errorCount == 1 ? " error" : " errors");
+        }
+        if (warningCount > 0) {
+            summary = summary + " " + warningCount +
+                (warningCount == 1 ? " warning" : " warnings");
+        }
+        if (infoCount > 0) {
+            summary = summary + " " + infoCount + " info";
+        }
+        summary = summary + ".";
 
         if (!valid) {
             summary = summary + " Not registered.";
