@@ -261,10 +261,18 @@ ERROR SUMMON_ORIENTATION_REQUIRED_FOR_EVENT
 and the FunctionFile is not registered/exported until an explicit orientation is
 selected.
 
-Preview emulation for an already-explicit Rotation/Facing command may use an
-internal relative `~ ~` intermediate summon so `player.execute()` can carry the
-spawn event, then applies the user's actual orientation through TP. This is
-Preview-only and does not alter canonical export semantics.
+Preview emulation for an already-explicit Rotation/Facing command retains
+the previously verified **orientation-free intermediate** accepted by the
+legacy MakeCode `player.execute()` bridge. Spawn Event + NameTag uses the
+Preview-only ordering `entity position event nameTag`; when no event is given,
+the canonical valid NameTag-first overload can be reused. After the intermediate
+summon, orientation is applied through TP and temporary tags are cleaned up.
+
+The intermediate is never sent to the canonical `.mcfunction` output. In
+Education chat/`.mcfunction`, `No Orientation + spawnEvent` remains an ERROR;
+the Preview-only legacy bridge exception is not a change in command grammar.
+
+This 0.0.39 compatibility repair is SOURCE only until Education Runtime re-test.
 
 ## NameTag-only overload clarification (0.0.39)
 

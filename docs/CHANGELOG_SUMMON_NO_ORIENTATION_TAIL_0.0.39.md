@@ -77,3 +77,36 @@ No Orientation + spawnEvent
 → require explicit Rotation / Facing Position / Facing Entity
 ```
 
+
+## Preview emulation correction (2026-10-10) — SOURCE, Runtime pending
+
+The pre-existing Rotation/Facing Position/Facing Entity EMULATED paths already
+passed Minecraft Education Runtime tests before 0.0.39. Those tests are not
+invalidated by this fix.
+
+The 0.0.39 Preview accidentally introduced a synthetic `~ ~` rotation into
+its **intermediate** SUMMON whenever a spawn event was set. That reintroduced
+a grammar form already known to fail in MakeCode `player.execute()`. The new
+`summon_event_named_rotation` screenshot shows this intermediate failed, whereas
+`summon_named_no_orientation` successfully spawned a named adult cow and the
+`No Orientation + spawnEvent` Definition ERROR still correctly blocked registration.
+
+This repair restores the previously verified PREVIEW-only legacy bridge:
+
+```text
+Original AST: Rotation/Facing + event + name
+  -> Preview-only `summon entity position event name` (no rotation tokens)
+  -> isolate newly summoned entity
+  -> apply user-selected Rotation/Facing through TP
+  -> cleanup
+```
+
+Only the Preview serializer/adapter and these explanatory docs change. The
+original AST, Validator, canonical Compiler, Registry and `pxt.json` do not.
+The Preview-only legacy text is NEVER a valid export substitute for the modern
+Bedrock/Education SUMMON syntax. This patch also checks the intermediate
+`player.execute()` boolean result, shows a Preview failure message if false,
+and cleans up temporary tags.
+
+**Evidence status**: 0.0.39 source repair; Education 26.32 re-test of the new
+Event+NameTag combinations is still required before claiming Runtime PASS.

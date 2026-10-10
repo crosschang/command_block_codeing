@@ -102,26 +102,22 @@ namespace MCFunctionPreview {
             " add " + oldTag
         );
 
-        // player.execute() does not accept the modern Rotation/Facing SUMMON
-        // overloads used by the canonical command. When a spawnEvent is present,
-        // Education needs explicit rotation slots before the event token. Use a
-        // PREVIEW-only relative 0/0 rotation for this intermediate summon, then
-        // apply the user's actual Rotation/Facing through TP below.
-        let previewOrientation = MCFunctionAST.createSummonNoOrientation();
-        if (command.spawnEvent && command.spawnEvent.length > 0) {
-            previewOrientation = MCFunctionAST.createSummonRotationOrientation(
-                MCFunctionAST.createRelativeRotation(0, 0)
-            );
+        // Keep the already-verified orientation EMULATION: first spawn using
+        // the legacy player.execute() grammar, then apply the user's real
+        // Rotation/Facing through TP below. Never send a modern SUMMON
+        // Rotation/Facing argument to player.execute() in this intermediate.
+        //
+        // This is a PREVIEW-only command: Education chat/.mcfunction use the
+        // canonical grammar, which differs from this legacy MakeCode bridge.
+        let previewSummonText = compileSummonPreviewIntermediate(command);
+        let intermediateSucceeded = previewSummonText.length > 0 &&
+            player.execute(previewSummonText);
+        if (!intermediateSucceeded) {
+            previewSay("SUMMON intermediate Preview failed: " + previewSummonText);
+            cleanupInternalTag(oldTag);
+            cleanupInternalTag(newTag);
+            return;
         }
-
-        let previewSummon = MCFunctionAST.createSummonAdvancedCommand(
-            command.entityId,
-            command.spawnPosition,
-            previewOrientation,
-            command.spawnEvent,
-            command.nameTag
-        );
-        executeCompiled(previewSummon);
 
         // Resolve the newly summoned entity around the intended spawn position.
         // The legacy execute form is intentionally PREVIEW-only; export continues
@@ -138,6 +134,50 @@ namespace MCFunctionPreview {
         // Cleanup does not depend on the entity retaining its original type.
         cleanupInternalTag(oldTag);
         cleanupInternalTag(newTag);
+    }
+
+    /**
+     * MakeCode player.execute()-ONLY SUMMON intermediate serializer.
+     *
+     * When a spawn event is present, the previously verified legacy MakeCode
+     * parser accepts `entity position event name`, without any orientation.
+     * Bedrock/Education chat and canonical .mcfunction MUST NOT use that form.
+     *
+     * When there is no event, reuse the real Compiler's valid NameTag-first
+     * overload rather than duplicating its ordinary command semantics.
+     */
+    function compileSummonPreviewIntermediate(
+        command: MCFunctionAST.SummonCommand
+    ): string {
+        if (!command.spawnEvent || command.spawnEvent.length == 0) {
+            let previewNoEvent = MCFunctionAST.createSummonAdvancedCommand(
+                command.entityId,
+                command.spawnPosition,
+                MCFunctionAST.createSummonNoOrientation(),
+                "",
+                command.nameTag
+            );
+            return MCFunctionCompiler.compileCommand(previewNoEvent);
+        }
+
+        let result = "summon " + command.entityId + " " +
+            MCFunctionCompiler.compilePosition(command.spawnPosition) +
+            " " + command.spawnEvent;
+        if (command.nameTag && command.nameTag.length > 0) {
+            result = result + " " + quoteSummonPreviewName(command.nameTag);
+        }
+        return result;
+    }
+
+    /** Escape only the name token of the legacy Preview SUMMON grammar. */
+    function quoteSummonPreviewName(value: string): string {
+        let result = "\"";
+        for (let i = 0; i < value.length; i++) {
+            let ch = value.charAt(i);
+            if (ch == "\\" || ch == "\"") result = result + "\\";
+            result = result + ch;
+        }
+        return result + "\"";
     }
 
     function applyOrientationWithTeleport(
