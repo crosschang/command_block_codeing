@@ -199,3 +199,39 @@ Both may change with Minecraft version/platform, but Add-on authors do not exten
 command domains. Unknown Direct Input can still be preserved where the authoring/import path
 requires forward-version compatibility.
 
+
+## Entity Event owner model (0.0.38)
+
+Entity Event and SUMMON Spawn Event use owner-scoped metadata rather than a flat whitelist.
+
+```text
+Entity behavior JSON
+→ all events defined by each owner
+→ entity_events.json
+→ owner/event lookup
+```
+
+`spawn_events.json` schema v2 exposes the same owner events and adds:
+
+```text
+recommendedEvents
+```
+
+This preserves the previous evidence-backed spawn-oriented subset as an authoring hint while
+making every owner event available to SUMMON authoring.
+
+Validation policy:
+
+```text
+known owner + missing owner event
+→ WARNING
+
+known owner + defined but non-recommended spawn event
+→ INFO
+
+custom/unknown owner relation
+→ preserve Direct Input and do not invent an owner mismatch
+```
+
+`spawnRecommended` is not a command-validity whitelist. It is versioned authoring metadata.
+Minecraft Runtime remains the final authority.

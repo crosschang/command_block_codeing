@@ -57,7 +57,9 @@
       "ownerScope": "Entity",
       "commandUsable": true,
       "addonAuthoringOnly": false,
-      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT",
+      "relationshipModel": "OWNER_EVENT_RELATIONS",
+      "validationPolicy": "WARN_ONLY_WHEN_OWNER_IS_STATICALLY_KNOWN"
     },
     "spawn_events": {
       "customPolicy": "OWNER_SCOPED_ID",
@@ -65,7 +67,14 @@
       "ownerScope": "Entity",
       "commandUsable": true,
       "addonAuthoringOnly": false,
-      "runtimeValidationReliability": "CONTEXT_DEPENDENT"
+      "runtimeValidationReliability": "CONTEXT_DEPENDENT",
+      "relationshipModel": "ALL_OWNER_EVENTS_WITH_SPAWN_RECOMMENDED_METADATA",
+      "validationPolicy": "OWNER_MISMATCH_WARNING_NONRECOMMENDED_INFO",
+      "notes": [
+        "All events defined by each vanilla entity remain selectable as summon spawnEvent values.",
+        "spawnRecommended is authoring metadata, not a whitelist or command-validity guarantee.",
+        "Unknown/custom owner-event relationships remain allowed for version/add-on compatibility."
+      ]
     },
     "block_states": {
       "customPolicy": "VANILLA_STATE_PLUS_CUSTOM_FALLBACK",

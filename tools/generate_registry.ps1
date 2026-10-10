@@ -6,7 +6,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$GeneratorVersion = '14.0.0'
+$GeneratorVersion = '15.0.0'
 if ($ExpectedVersion -and $ExpectedVersion -ne $GeneratorVersion) {
     throw "Registry generator version mismatch. Expected $ExpectedVersion but found $GeneratorVersion."
 }
@@ -73,6 +73,17 @@ function Read-GroupedRegistry([string]$Kind) {
             if ([string]::IsNullOrWhiteSpace($Value)) { throw "Empty event id for $EntityId in $Path" }
             if ($SeenEvent.ContainsKey($Value)) { throw "Duplicate event for ${EntityId} in ${Path}: $Value" }
             $SeenEvent[$Value] = $true
+        }
+
+        if ($EntityEntry.PSObject.Properties.Name -contains 'recommendedEvents') {
+            $SeenRecommended = @{}
+            foreach ($EventId in @($EntityEntry.recommendedEvents)) {
+                $Value = [string]$EventId
+                if ([string]::IsNullOrWhiteSpace($Value)) { throw "Empty recommended event id for $EntityId in $Path" }
+                if ($SeenRecommended.ContainsKey($Value)) { throw "Duplicate recommended event for ${EntityId} in ${Path}: $Value" }
+                if (-not $SeenEvent.ContainsKey($Value)) { throw "Recommended event not present in owner events for ${EntityId} in ${Path}: $Value" }
+                $SeenRecommended[$Value] = $true
+            }
         }
     }
     return $Entities
@@ -669,6 +680,112 @@ function Generate-RegistryLookup() {
     return (($Lines -join "`n") + "`n")
 }
 
+function Generate-EntityEventRegistryLookup() {
+    $EventOwners = @(Read-GroupedRegistry 'entity_events' | Sort-Object { [string]$_.entity })
+    $SpawnOwners = @(Read-GroupedRegistry 'spawn_events' | Sort-Object { [string]$_.entity })
+
+    $OwnerIds = @($EventOwners | ForEach-Object { [string]$_.entity } | Sort-Object -Unique)
+    $Relations = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($Entry in $EventOwners) {
+        $EntityId = [string]$Entry.entity
+        foreach ($EventId in @($Entry.events)) {
+            [void]$Relations.Add($EntityId + '|' + [string]$EventId)
+        }
+    }
+    $RelationValues = @($Relations.ToArray() | Sort-Object -Unique)
+
+    $Recommended = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($Entry in $SpawnOwners) {
+        $EntityId = [string]$Entry.entity
+        if (-not ($Entry.PSObject.Properties.Name -contains 'recommendedEvents')) { continue }
+        foreach ($EventId in @($Entry.recommendedEvents)) {
+            [void]$Recommended.Add($EntityId + '|' + [string]$EventId)
+        }
+    }
+    $RecommendedValues = @($Recommended.ToArray() | Sort-Object -Unique)
+
+    $Lines = New-Object 'System.Collections.Generic.List[string]'
+    @(
+        '/**',
+        ' * AUTO-GENERATED FILE. DO NOT EDIT BY HAND.',
+        ' *',
+        ' * Sources:',
+        ' * - registry/derived/bedrock/entity_events.json',
+        ' * - registry/derived/bedrock/spawn_events.json',
+        ' * Generator: tools/generate_registry.ps1',
+        ' *',
+        ' * Owner-scoped Entity Event metadata for Definition Validation.',
+        ' * spawnRecommended is an authoring hint, never a whitelist.',
+        ' */',
+        '',
+        'namespace MCFunctionEntityEventRegistry {'
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    [void]$Lines.Add('    let knownOwnerEntityIds: string[] = [')
+    foreach ($Value in $OwnerIds) { [void]$Lines.Add('        ' + (Quote-JsString $Value) + ',') }
+    [void]$Lines.Add('    ];')
+    [void]$Lines.Add('')
+
+    [void]$Lines.Add('    let knownOwnerEventRelations: string[] = [')
+    foreach ($Value in $RelationValues) { [void]$Lines.Add('        ' + (Quote-JsString $Value) + ',') }
+    [void]$Lines.Add('    ];')
+    [void]$Lines.Add('')
+
+    [void]$Lines.Add('    let spawnRecommendedRelations: string[] = [')
+    foreach ($Value in $RecommendedValues) { [void]$Lines.Add('        ' + (Quote-JsString $Value) + ',') }
+    [void]$Lines.Add('    ];')
+    [void]$Lines.Add('')
+
+    @(
+        '    function normalizeEntityId(value: string): string {',
+        '        if (!value) return value;',
+        '        if (value.indexOf(":") < 0) return "minecraft:" + value;',
+        '        return value;',
+        '    }',
+        '',
+        '    function containsSorted(values: string[], value: string): boolean {',
+        '        let low = 0;',
+        '        let high = values.length - 1;',
+        '',
+        '        while (low <= high) {',
+        '            let middle = Math.floor((low + high) / 2);',
+        '            let current = values[middle];',
+        '',
+        '            if (current == value) return true;',
+        '            if (current < value) low = middle + 1;',
+        '            else high = middle - 1;',
+        '        }',
+        '',
+        '        return false;',
+        '    }',
+        '',
+        '    function relationKey(entityId: string, eventId: string): string {',
+        '        return normalizeEntityId(entityId) + "|" + eventId;',
+        '    }',
+        '',
+        '    export function hasOwnerData(entityId: string): boolean {',
+        '        return containsSorted(knownOwnerEntityIds, normalizeEntityId(entityId));',
+        '    }',
+        '',
+        '    export function isDefinedForOwner(entityId: string, eventId: string): boolean {',
+        '        return containsSorted(knownOwnerEventRelations, relationKey(entityId, eventId));',
+        '    }',
+        '',
+        '    export function isSpawnRecommended(entityId: string, eventId: string): boolean {',
+        '        return containsSorted(spawnRecommendedRelations, relationKey(entityId, eventId));',
+        '    }',
+        '}',
+        ''
+    ) | ForEach-Object { [void]$Lines.Add($_) }
+
+    return [ordered]@{
+        Text = (($Lines -join "`n") + "`n")
+        OwnerCount = $OwnerIds.Count
+        RelationCount = $RelationValues.Count
+        RecommendedCount = $RecommendedValues.Count
+    }
+}
+
 function Generate-GroupedEventLibrary(
     [string]$Kind,
     [string]$Namespace,
@@ -735,7 +852,17 @@ function Generate-GroupedEventLibrary(
 
     foreach ($EntityEntry in $Entities) {
         $EntityId = [string]$EntityEntry.entity
-        $Events = @($EntityEntry.events | ForEach-Object { [string]$_ } | Sort-Object)
+        $RecommendedSet = @{}
+        if ($Kind -eq 'spawn_events' -and ($EntityEntry.PSObject.Properties.Name -contains 'recommendedEvents')) {
+            foreach ($RecommendedEvent in @($EntityEntry.recommendedEvents)) {
+                $RecommendedSet[[string]$RecommendedEvent] = $true
+            }
+        }
+
+        $Events = @(
+            @($EntityEntry.events | ForEach-Object { [string]$_ }) |
+                Sort-Object @{ Expression={ if ($RecommendedSet.ContainsKey([string]$_)) { 0 } else { 1 } } }, @{ Expression={ [string]$_ } }
+        )
         if ($Events.Count -eq 0) { continue }
 
         $GroupLabel = Get-GroupLabel $EntityId
@@ -760,11 +887,15 @@ function Generate-GroupedEventLibrary(
 
             $Value = Quote-JsString $EventId
             $BlockWeight = 90 - ($Index % 40)
+            $BlockText = $EntityLocal + ' ' + $Prefix + ' ' + $EventId
+            if ($Kind -eq 'spawn_events' -and $RecommendedSet.ContainsKey($EventId)) {
+                $BlockText = $EntityLocal + ' recommended spawn event ' + $EventId
+            }
             @(
                 ('    //% group="' + $GroupLabel + '"'),
                 "    //% weight=$BlockWeight",
                 "    //% blockId=$BlockId",
-                ('    //% block="' + $EntityLocal + ' ' + $Prefix + ' ' + $EventId + '"'),
+                ('    //% block="' + $BlockText + '"'),
                 "    export function $FunctionName(): string {",
                 "        return $Value;",
                 '    }',
@@ -805,6 +936,19 @@ if ($LookupActual -ne $LookupExpected) {
     if (-not $Check) { [System.IO.File]::WriteAllText($LookupOutPath, $LookupExpected, $Utf8NoBom) }
 }
 
+
+$EntityEventLookupOutDir = Join-Path $Root 'src\registry'
+if (-not (Test-Path $EntityEventLookupOutDir)) { New-Item -ItemType Directory -Force -Path $EntityEventLookupOutDir | Out-Null }
+$EntityEventLookupPath = Join-Path $EntityEventLookupOutDir 'entity_event_registry.generated.ts'
+$EntityEventLookupExpected = Generate-EntityEventRegistryLookup
+$EntityEventLookupActual = if (Test-Path $EntityEventLookupPath) { [System.IO.File]::ReadAllText($EntityEventLookupPath) } else { $null }
+if ($EntityEventLookupActual -ne $EntityEventLookupExpected.Text) {
+    [void]$Changed.Add($EntityEventLookupPath.Substring($Root.Length + 1))
+    if (-not $Check) { [System.IO.File]::WriteAllText($EntityEventLookupPath, $EntityEventLookupExpected.Text, $Utf8NoBom) }
+}
+$Counts['event_owners'] = $EntityEventLookupExpected.OwnerCount
+$Counts['event_owner_relations'] = $EntityEventLookupExpected.RelationCount
+$Counts['spawn_recommended'] = $EntityEventLookupExpected.RecommendedCount
 
 $BlockStateLookupOutDir = Join-Path $Root 'src\registry'
 if (-not (Test-Path $BlockStateLookupOutDir)) { New-Item -ItemType Directory -Force -Path $BlockStateLookupOutDir | Out-Null }

@@ -263,6 +263,40 @@ namespace MCFunctionValidator {
         }
     }
 
+    export function validateEntityEventForOwner(
+        entityId: string,
+        eventId: string,
+        spawnContext: boolean
+    ): ValidationIssue[] {
+        let issues: ValidationIssue[] = [];
+
+        if (!isSafeIdToken(entityId) || !isSafeIdToken(eventId)) return issues;
+        if (MCFunctionRegistryLookup.isCustomNamespace(entityId)) return issues;
+        if (!MCFunctionRegistryLookup.isKnownEntity(entityId)) return issues;
+        if (!MCFunctionEntityEventRegistry.hasOwnerData(entityId)) return issues;
+
+        if (!MCFunctionEntityEventRegistry.isDefinedForOwner(entityId, eventId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Warning,
+                "ENTITY_EVENT_NOT_DEFINED_FOR_OWNER",
+                "Event " + eventId + " is not defined for " + entityId + " in the current vanilla entity metadata. Preview and export will continue for version/add-on compatibility."
+            );
+            return issues;
+        }
+
+        if (spawnContext && !MCFunctionEntityEventRegistry.isSpawnRecommended(entityId, eventId)) {
+            addIssue(
+                issues,
+                ValidationLevel.Info,
+                "SUMMON_EVENT_NOT_SPAWN_RECOMMENDED",
+                "Event " + eventId + " is defined for " + entityId + " but is not marked spawn-recommended in the current vanilla metadata. It may intentionally create an unusual initialization state."
+            );
+        }
+
+        return issues;
+    }
+
     function validateItemRegistryId(
         itemId: string,
         issues: ValidationIssue[]
@@ -1077,13 +1111,20 @@ namespace MCFunctionValidator {
 
         validateSummonOrientation(command.orientation, issues);
 
-        if (command.spawnEvent && command.spawnEvent.length > 0 && !isSafeIdToken(command.spawnEvent)) {
-            addIssue(
-                issues,
-                ValidationLevel.Error,
-                "SUMMON_EVENT_INVALID",
-                "Summon spawn event contains invalid command characters."
-            );
+        if (command.spawnEvent && command.spawnEvent.length > 0) {
+            if (!isSafeIdToken(command.spawnEvent)) {
+                addIssue(
+                    issues,
+                    ValidationLevel.Error,
+                    "SUMMON_EVENT_INVALID",
+                    "Summon spawn event contains invalid command characters."
+                );
+            } else {
+                appendIssues(
+                    issues,
+                    validateEntityEventForOwner(command.entityId, command.spawnEvent, true)
+                );
+            }
         }
 
         return issues;

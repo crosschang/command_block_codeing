@@ -1,6 +1,6 @@
 {
     "name": "command_block_coding",
-    "version": "0.0.34",
+    "version": "0.0.38",
     "description": "Minecraft Education command blocks for MakeCode",
     "dependencies": {
         "core": "*",
@@ -52,6 +52,7 @@
         "src/compiler/compiler.ts",
         "src/registry/registry_lookup.generated.ts",
         "src/registry/block_state_registry.generated.ts",
+        "src/registry/entity_event_registry.generated.ts",
         "src/validator/validator.ts",
         "src/preview/query_result.ts",
         "src/preview/internal_tag.ts",
@@ -101,7 +102,8 @@
         "docs/CHANGELOG_VALIDATION_REGISTRY_UX_2026-10-09.md",
         "docs/CHANGELOG_DIAGNOSTIC_STORE_0.0.35.md",
         "docs/CHANGELOG_DIAGNOSTIC_SUMMARY_0.0.36.md",
-        "docs/CHANGELOG_EXISTING_LIBRARY_POLICY_0.0.37.md"
+        "docs/CHANGELOG_EXISTING_LIBRARY_POLICY_0.0.37.md",
+        "docs/CHANGELOG_EVENT_OWNER_SCOPED_0.0.38.md"
     ],
     "testFiles": [
         "test.ts"

@@ -14,7 +14,7 @@ $SourceDir = Join-Path $Root 'registry\source\bedrock'
 $DerivedDir = Join-Path $Root 'registry\derived\bedrock'
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $Headers = @{
-    'User-Agent' = 'command_block_codeing-registry-updater/1.3'
+    'User-Agent' = 'command_block_codeing-registry-updater/1.4'
     'Accept' = 'application/vnd.github+json, text/plain, */*'
 }
 
@@ -366,9 +366,10 @@ function Get-VanillaEntityDerivedData {
         }
     )
 
-    # Spawn Event is intentionally a conservative authoring subset, not a second Mojang enum.
-    # Include events that are explicitly referenced through a vanilla `spawn_event` property,
-    # plus the built-in initialization events documented by Minecraft Creator.
+    # /summon accepts the EntityEvents argument domain.  Keep every event defined by
+    # the owner entity available in the SPAWN EVENT Library, but preserve the former
+    # evidence-backed spawn-oriented subset as `recommendedEvents` metadata.
+    # `spawnRecommended` is an authoring hint, never a whitelist.
     $SpawnEventCandidateSet = @{}
     foreach ($EventId in $SpawnEventReferenceSet.Keys) { $SpawnEventCandidateSet[$EventId] = $true }
     foreach ($BuiltIn in @('minecraft:entity_spawned', 'minecraft:entity_born', 'minecraft:entity_transformed')) {
@@ -378,13 +379,15 @@ function Get-VanillaEntityDerivedData {
     $SpawnEvents = @(
         $EntityEventMap.Keys | Sort-Object | ForEach-Object {
             $EntityId = [string]$_
-            $Matches = @(
-                @($EntityEventMap[$EntityId]) | Where-Object { $SpawnEventCandidateSet.ContainsKey([string]$_) } | Sort-Object
-            )
-            if ($Matches.Count -gt 0) {
+            $AllEvents = @(@($EntityEventMap[$EntityId]) | Sort-Object)
+            if ($AllEvents.Count -gt 0) {
+                $Recommended = @(
+                    $AllEvents | Where-Object { $SpawnEventCandidateSet.ContainsKey([string]$_) } | Sort-Object
+                )
                 [ordered]@{
                     entity = $EntityId
-                    events = $Matches
+                    events = $AllEvents
+                    recommendedEvents = $Recommended
                 }
             }
         }
@@ -393,7 +396,11 @@ function Get-VanillaEntityDerivedData {
     $EntityEventRelationCount = 0
     foreach ($Entry in $EntityEvents) { $EntityEventRelationCount += @($Entry.events).Count }
     $SpawnEventRelationCount = 0
-    foreach ($Entry in $SpawnEvents) { $SpawnEventRelationCount += @($Entry.events).Count }
+    $SpawnRecommendedRelationCount = 0
+    foreach ($Entry in $SpawnEvents) {
+        $SpawnEventRelationCount += @($Entry.events).Count
+        $SpawnRecommendedRelationCount += @($Entry.recommendedEvents).Count
+    }
 
     return [ordered]@{
         ParsedEntityFiles = $ParsedCount
@@ -402,6 +409,7 @@ function Get-VanillaEntityDerivedData {
         SpawnEvents = $SpawnEvents
         EntityEventRelationCount = $EntityEventRelationCount
         SpawnEventRelationCount = $SpawnEventRelationCount
+        SpawnRecommendedRelationCount = $SpawnRecommendedRelationCount
         SpawnEventReferenceCount = $SpawnEventReferenceSet.Count
     }
 }
@@ -668,7 +676,7 @@ function New-EventSourceObject([object[]]$Entries, [string]$Context) {
     $SourceKind = if ($Context -eq 'event') {
         'vanilla-behavior-entity-events-derived'
     } else {
-        'vanilla-behavior-spawn-events-derived'
+        'vanilla-behavior-owner-events-with-spawn-recommendation-derived'
     }
     $ContextNotes = if ($Context -eq 'event') {
         @(
@@ -676,8 +684,9 @@ function New-EventSourceObject([object[]]$Entries, [string]$Context) {
         )
     } else {
         @(
-            'Conservative spawn-oriented subset: an event must be defined by the entity and either be a documented built-in spawn initialization event or be explicitly referenced by a vanilla spawn_event property.',
-            'This is an authoring aid, not a whitelist. /summon uses the EntityEvents argument domain, so Direct Input remains available for any valid/custom event.'
+            'Contains all events defined by each vanilla behavior entity JSON so /summon authoring does not hide owner events.',
+            'recommendedEvents preserves the evidence-backed spawn-oriented subset: documented initialization events plus explicit vanilla spawn_event references.',
+            'spawnRecommended is authoring metadata, not a whitelist. Non-recommended owner events may intentionally create unusual initialization states.'
         )
     }
     $Notes = @(
@@ -687,7 +696,7 @@ function New-EventSourceObject([object[]]$Entries, [string]$Context) {
         'Minecraft Education support is NOT inferred from this Bedrock snapshot.'
     )
     return [ordered]@{
-        schemaVersion = 1
+        schemaVersion = $(if ($Context -eq 'spawn') { 2 } else { 1 })
         platform = 'bedrock'
         source = [ordered]@{
             kind = $SourceKind
@@ -741,8 +750,11 @@ if ($FamilyIds.Count -lt 40) {
 if ($Derived.EntityEventRelationCount -lt 200) {
     throw "Only $($Derived.EntityEventRelationCount) entity-event relations derived; expected at least 200. No files written."
 }
-if ($Derived.SpawnEventRelationCount -lt 20) {
-    throw "Only $($Derived.SpawnEventRelationCount) spawn-event relations derived; expected at least 20. No files written."
+if ($Derived.SpawnEventRelationCount -lt 200) {
+    throw "Only $($Derived.SpawnEventRelationCount) owner spawn-event relations derived; expected at least 200. No files written."
+}
+if ($Derived.SpawnRecommendedRelationCount -lt 20) {
+    throw "Only $($Derived.SpawnRecommendedRelationCount) spawn-recommended relations derived; expected at least 20. No files written."
 }
 if ($BlockStateDerived.States.Count -lt 100) {
     throw "Only $($BlockStateDerived.States.Count) command-relevant block states derived; expected at least 100. No files written."
@@ -767,6 +779,7 @@ Write-Host ('{0,-14}: {1}' -f 'entity listing', $ListingEntities.Count)
 Write-Host ('{0,-14}: {1}' -f 'official events', $OfficialEntityEvents.Count)
 Write-Host ('{0,-14}: {1}' -f 'entity files', $Derived.ParsedEntityFiles)
 Write-Host ('{0,-14}: {1}' -f 'spawn refs', $Derived.SpawnEventReferenceCount)
+Write-Host ('{0,-14}: {1}' -f 'spawn recommended', $Derived.SpawnRecommendedRelationCount)
 Write-Host ('{0,-14}: {1}' -f 'block states', $BlockStateDerived.States.Count)
 Write-Host ('{0,-14}: {1}' -f 'block usage', $BlockStateDerived.Blocks.Count)
 Write-Host ('{0,-14}: {1}' -f 'state links', $BlockStateDerived.RelationCount)
@@ -829,8 +842,8 @@ $BlockStateUsageObject = New-BlockStateUsageSourceObject @($BlockStateDerived.Bl
     $Utf8NoBom
 )
 
-# `/event` and `/summon ... spawnEvent` share the EntityEvents command argument domain,
-# but the SPAWN EVENT Library intentionally exposes only evidence-backed spawn-oriented events.
+# `/event` and `/summon ... spawnEvent` share the EntityEvents command argument domain.
+# SPAWN EVENT exposes all owner events and carries the evidence-backed subset as recommendedEvents metadata.
 $SpawnObject = New-EventSourceObject @($Derived.SpawnEvents) 'spawn'
 [System.IO.File]::WriteAllText(
     (Join-Path $DerivedDir 'spawn_events.json'),
