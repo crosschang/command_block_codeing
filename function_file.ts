@@ -67,6 +67,23 @@ namespace FunctionFile {
     //% blockAllowMultiple=1
     //% topblock=true
     export function define(name: string, handler: () => void): void {
+        // Human-facing diagnostics viewer. Multiple define() calls are safe because
+        // the runtime registers this chat command only once per program run.
+        MCFunctionDiagnostics.ensureChatRegistered();
+
+        if (MCFunctionDiagnostics.isReservedChatCommand(name)) {
+            let reservedIssues: MCFunctionValidator.ValidationIssue[] = [{
+                level: MCFunctionValidator.ValidationLevel.Error,
+                code: "FUNCTION_NAME_RESERVED",
+                message: "mcfunction name cbi_diag is reserved for the diagnostic viewer."
+            }];
+
+            register(name, createPreparedHandler([]), false);
+            MCFunctionDiagnostics.replaceDefinitionIssues(name, reservedIssues);
+            reportDefinitionComplete(name, reservedIssues, false);
+            return;
+        }
+
         if (collectingTickValues) {
             reportStructureError(
                 "FUNCTION_FILE_IN_TICK_JSON",
@@ -240,10 +257,6 @@ namespace FunctionFile {
     }
 
     function prepareDefinition(name: string, handler: () => void): void {
-        MCFunctionPreview.previewSay(
-            "Checking mcfunction " + name + " for problems."
-        );
-
         // Save/restore capture state defensively. Nested FunctionFile.define() is
         // rejected above, but this keeps the internal gate deterministic if the
         // implementation is reused later by another project-level validation pass.
@@ -274,7 +287,7 @@ namespace FunctionFile {
         let preparedHandler = createPreparedHandler(actions);
         register(name, preparedHandler, valid);
 
-        reportDefinitionIssues(name, issues, structureError);
+        MCFunctionDiagnostics.replaceDefinitionIssues(name, issues);
         reportDefinitionComplete(name, issues, structureError);
 
         if (!valid) {
@@ -294,34 +307,6 @@ namespace FunctionFile {
                 actions[i]();
             }
         };
-    }
-
-    function reportDefinitionIssues(
-        name: string,
-        issues: MCFunctionValidator.ValidationIssue[],
-        structureError: boolean
-    ): void {
-        if (structureError || MCFunctionValidator.hasError(issues)) {
-            MCFunctionPreview.previewSay(
-                "ERROR: mcfunction " + name + " was not registered because definition validation failed."
-            );
-        }
-
-        for (let i = 0; i < issues.length; i++) {
-            if (issues[i].level == MCFunctionValidator.ValidationLevel.Error) {
-                MCFunctionPreview.previewSay(
-                    "ERROR [" + issues[i].code + "]: " + issues[i].message
-                );
-            } else if (issues[i].level == MCFunctionValidator.ValidationLevel.Warning) {
-                MCFunctionPreview.previewSay(
-                    "WARNING [" + issues[i].code + "]: " + issues[i].message
-                );
-            } else if (issues[i].level == MCFunctionValidator.ValidationLevel.Info) {
-                MCFunctionPreview.previewSay(
-                    "INFO [" + issues[i].code + "]: " + issues[i].message
-                );
-            }
-        }
     }
 
     function countDefinitionIssues(
@@ -353,19 +338,27 @@ namespace FunctionFile {
             MCFunctionValidator.ValidationLevel.Info
         );
 
-        if (structureError) errorCount++;
+        // Structural errors captured inside a FunctionFile are also inserted into
+        // definitionIssues by reportStructureError(), so do not double-count them.
+        let valid = !structureError && errorCount == 0;
 
         if (errorCount == 0 && warningCount == 0 && infoCount == 0) {
             MCFunctionPreview.previewSay(
-                "mcfunction " + name + " check complete. No problems found."
+                "mcfunction " + name + ": OK."
             );
             return;
         }
 
-        MCFunctionPreview.previewSay(
-            "mcfunction " + name + " check complete. errors " + errorCount +
-            " warnings " + warningCount + " info " + infoCount + "."
-        );
+        let summary =
+            "mcfunction " + name + ": errors " + errorCount +
+            " warnings " + warningCount + " info " + infoCount + ".";
+
+        if (!valid) {
+            summary = summary + " Not registered.";
+        }
+
+        summary = summary + " Details: " + MCFunctionDiagnostics.chatCommandName();
+        MCFunctionPreview.previewSay(summary);
     }
 
     function startTickPreview(): void {
@@ -433,6 +426,12 @@ namespace FunctionFile {
         // definition even when the visible message for that code was already shown.
         if (collectingDefinitionActions) {
             definitionStructureError = true;
+            addDefinitionIssueUnique({
+                level: MCFunctionValidator.ValidationLevel.Error,
+                code: code,
+                message: message
+            });
+            return;
         }
 
         // Avoid flooding chat when invalid project structure is reached from a
